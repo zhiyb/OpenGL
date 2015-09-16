@@ -1,7 +1,11 @@
 TEMPLATE = app
-CONFIG += console c++11 opengl
+CONFIG += opengl
+#CONFIG += c++11
+#CONFIG -= console
 CONFIG -= app_bundle
 CONFIG -= qt
+
+QMAKE_LFLAGS += -static
 
 INCLUDEPATH += D:\Programs\misc\glut
 LIBS += -lopengl32 -lglut32 -lglu32
