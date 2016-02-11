@@ -13,20 +13,18 @@
 #include "global.h"
 #include "helper.h"
 #include "sphere.h"
+#include "cube.h"
 
 #define FILE_VERTEX_SHADER	"light_frag.vert"
 #define FILE_FRAGMENT_SHADER	"light_frag.frag"
 
 #define SCENE_NUM	6
-#define SCENE_SCALE	0.8f
+#define SCENE_SCALE	0.7f
 
 using namespace std;
 using namespace glm;
 
-vector<vec3> vertices, normals;
-vector<GLuint> indices;
-
-static map<string, GLint> location;
+map<string, GLint> location;
 static struct {
 	mat4 model, view, projection;
 } matrix;
@@ -35,19 +33,42 @@ static struct {
 	int scene;
 } status;
 
-static Sphere sphere(32);
+struct Model {
+	struct Position {
+		mat4 model;
+	};
+	vector<Position> position;
+	Object *object;
+};
+vector<Model *> models;
+
+static Object *sphere;
 
 void setupVertices()
 {
-	vertices.push_back(vec3(-0.5f, -0.5f, 0.0f));
-	vertices.push_back(vec3(0.5f, -0.5f, 0.0f));
-	vertices.push_back(vec3(0.5f, 0.5f, 0.0f));
-	vertices.push_back(vec3(-0.5f, 0.5f, 0.0f));
-	normals.push_back(vec3(-0.5f, -0.5f, 0.0f));
-	normals.push_back(vec3(0.5f, -0.5f, 0.0f));
-	normals.push_back(vec3(0.5f, 0.5f, 0.0f));
-	normals.push_back(vec3(-0.5f, 0.5f, 0.0f));
-	sphere.setup();
+	sphere = new Sphere(48);
+	sphere->setup();
+
+	Model *model;
+	Model::Position pos;
+
+	model = new Model;
+	model->object = new Sphere(32);
+	model->object->setup();
+	pos.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, -0.5f)), vec3(0.2f));
+	model->position.push_back(pos);
+	pos.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, 0.5f)), vec3(0.2f));
+	model->position.push_back(pos);
+	models.push_back(model);
+
+	model = new Model;
+	model->object = new Cube;
+	model->object->setup();
+	pos.model = scale(translate(mat4(), vec3(0.5f, -0.5f, -0.5f)), vec3(0.2f));
+	model->position.push_back(pos);
+	pos.model = scale(translate(mat4(), vec3(0.5f, -0.5f, 0.5f)), vec3(0.2f));
+	model->position.push_back(pos);
+	models.push_back(model);
 }
 
 void updateMatrices()
@@ -56,9 +77,6 @@ void updateMatrices()
 	glUniformMatrix4fv(location["mvpMatrix"], 1, GL_FALSE, (GLfloat *)&mvpMatrix);
 	mat4 normalMatrix = transpose(inverse(matrix.view * matrix.model));
 	glUniformMatrix4fv(location["normalMatrix"], 1, GL_FALSE, (GLfloat *)&normalMatrix);
-	vec3 light(0.f, 0.f, 1.f);
-	light = normalize(vec3(normalMatrix * vec4(light, 1.f)));
-	glUniform3fv(location["light"], 1, (GLfloat *)&light);
 }
 
 void updateModel(const vec4 colour, const vec3 pos, const vec3 scale)
@@ -79,20 +97,24 @@ void render()
 	vec3 viewer(0.f, 0.f, 1.f);
 	glUniform3fv(location["viewer"], 1, (GLfloat *)&viewer);
 	updateMatrices();
+	glUniform1f(location["ambient"], 0.3f);
+	glUniform1f(location["diffuse"], 1.f);
+	glUniform1f(location["specular"], 1.f);
 	updateModel(vec4(1.f), light, vec3(0.03f));
-	sphere.renderSolid();
+	sphere->bind();
+	sphere->renderSolid();
 
 	// Scene
 	matrix.model = scale(mat4(), vec3(SCENE_SCALE, SCENE_SCALE, SCENE_SCALE));
 	updateMatrices();
 
-	static const float scale = SCENE_SCALE / 4, offset = 0.35f;
+	//static const float scale = SCENE_SCALE / 4, offset = 0.35f;
 	switch (status.scene) {
 	case 0:
 		// (A) Draw a wire-frame sphere by calculating all
 		// the vertex positions and drawing lines between them.
 		glUniform4f(location["colour"], 0.1f, 0.2f, 1.f, 1.f);
-		sphere.renderFrame();
+		sphere->renderFrame();
 		break;
 	case 1:
 		// (B) For the sphere, work out the surface normal direction and
@@ -100,9 +122,9 @@ void render()
 		// the normal direction of each vertex.
 		// The sphere should now appear to be a hedgehog.
 		glUniform4f(location["colour"], 0.1f, 0.2f, 1.f, 1.f);
-		sphere.renderFrame();
+		sphere->renderFrame();
 		glUniform4f(location["colour"], 1.f, 0.f, 0.f, 1.f);
-		sphere.renderNormal();
+		sphere->renderNormal();
 		break;
 	case 2:
 		// (C) Use the normal information calculated in (b) above work out
@@ -110,49 +132,44 @@ void render()
 		// Assume that the light source is at infinity and is co-axial
 		// with the viewpoint. Use this to draw a shaded sphere.
 		updateModel(vec4(0.f, 0.f, 1.f, 1.f), vec3(0.f), vec3(0.8));
-		sphere.renderSolid();
+		sphere->renderSolid();
 		break;
 	case 3:
 		// (D) Develop a simple animation showing a number of cones and spheres
 		// moving along regular paths. These can be wireframe or solid.
-		updateModel(vec4(1.f, 1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(1.f, 0.f, 0.f, 1.f), vec3(offset, 0.f, 0.f), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(0.f, 1.f, 1.f, 1.f), vec3(-offset, 0.f, 0.f), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(0.f, 1.f, 0.f, 1.f), vec3(0.f, offset, 0.f), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(1.f, 0.f, 1.f, 1.f), vec3(0.f, -offset, 0.f), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(0.f, 0.f, 1.f, 1.f), vec3(0.f, 0.f, offset), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(1.f, 1.f, 0.f, 1.f), vec3(0.f, 0.f, -offset), vec3(scale));
-		sphere.renderSolid();
-		updateModel(vec4(1.f, 1.f, 1.f, 1.f), vec3(1.5f, 0.f, 0.f), vec3(scale));
-		sphere.renderSolid();
+		for (Model *model: models) {
+			model->object->bind();
+			for (Model::Position pos: model->position) {
+				matrix.model = pos.model;
+				updateMatrices();
+				model->object->renderSolid();
+			}
+		}
 		break;
 	case 4:
 		// (E) Draw a textured object, such as a rectangle (plane), box or sphere.
-		sphere.renderSolid();
+		glUniform4f(location["colour"], 0.4f, 0.8f, 1.f, 1.f);
+		glUniform1f(location["specular"], 0.3f);
+		sphere->renderSolid();
 		break;
 	case 5:
 		updateModel(vec4(1.f, 0.f, 0.f, 1.f), vec3(0.f), vec3(SCENE_SCALE + 0.05f));
-		sphere.renderFrame();
+		sphere->renderFrame();
 		updateModel(vec4(0.f, 1.f, 0.f, 1.f), vec3(0.f), vec3(SCENE_SCALE - 0.05f));
-		sphere.renderSolid();
+		sphere->renderSolid();
 		updateModel(vec4(0.f, 0.f, 1.f, 0.7f), vec3(0.f), vec3(SCENE_SCALE));
-		sphere.renderSolid();
+		sphere->renderSolid();
 		glUniform4f(location["colour"], 0.f, 1.f, 0.f, 1.f);
-		sphere.renderNormal();
+		sphere->renderNormal();
 		break;
 	}
-#if 1
-	glUniform4f(location["colour"], 1.0, 1.0, 0.0, 1.0);
-	matrix.model = mat4();
-	updateMatrices();
-	glDrawArrays(GL_LINE_LOOP, 0, 4);
-#endif
+}
+
+void timerCB()
+{
+	for (Model *model: models)
+		for (Model::Position &pos: model->position)
+			pos.model = rotate<GLfloat>(mat4(), pi<GLfloat>() / 100.f, vec3(1.f, 1.f, 1.f)) * pos.model;
 }
 
 void refreshCB(GLFWwindow *window)
@@ -211,6 +228,16 @@ void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*
 	matrix.view = rotate(mat4(), pi<GLfloat>() / 72.f, rot) * matrix.view;
 }
 
+void getUniforms(GLuint program, const char **uniforms)
+{
+	if (!program)
+		return;
+	while (*uniforms) {
+		location[*uniforms] = glGetUniformLocation(program, *uniforms);
+		uniforms++;
+	}
+}
+
 int main(int /*argc*/, char */*argv*/[])
 {
 	/* Initialize the library */
@@ -247,11 +274,12 @@ int main(int /*argc*/, char */*argv*/[])
 	glUseProgram(program);
 	location["position"] = glGetAttribLocation(program, "position");
 	location["normal"] = glGetAttribLocation(program, "normal");
-	location["colour"] = glGetUniformLocation(program, "colour");
-	location["light"] = glGetUniformLocation(program, "light");
-	location["viewer"] = glGetUniformLocation(program, "viewer");
-	location["mvpMatrix"] = glGetUniformLocation(program, "mvpMatrix");
-	location["normalMatrix"] = glGetUniformLocation(program, "normalMatrix");
+	const char *uniforms[] = {
+		"colour", "light", "viewer",
+		"mvpMatrix", "normalMatrix",
+		"ambient", "diffuse", "specular", 0
+	};
+	getUniforms(program, uniforms);
 
 	setupVertices();
 	status.scene = 0;
@@ -262,33 +290,11 @@ int main(int /*argc*/, char */*argv*/[])
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	GLuint bVertex;
-	glGenBuffers(1, &bVertex);
-	glBindBuffer(GL_ARRAY_BUFFER, bVertex);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), vertices.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(location["position"]);
-	glVertexAttribPointer(location["position"], 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	GLuint bNormal;
-	glGenBuffers(1, &bNormal);
-	glBindBuffer(GL_ARRAY_BUFFER, bNormal);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), normals.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(location["normal"]);
-	glVertexAttribPointer(location["normal"], 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	GLuint bIndex;
-	glGenBuffers(1, &bIndex);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bIndex);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
-
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	refreshCB(window);
 
+	double prev = glfwGetTime();
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
@@ -299,7 +305,12 @@ int main(int /*argc*/, char */*argv*/[])
 		glfwSwapBuffers(window);
 
 		/* Poll for and process events */
-		glfwWaitEvents();
+		double now = glfwGetTime();
+		if (now - prev > 0.1) {
+			timerCB();
+			prev += 0.1;
+		}
+		//glfwWaitEvents();
 		glfwPollEvents();
 	}
 

@@ -1,7 +1,9 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-class Sphere
+#include "object.h"
+
+class Sphere : public Object
 {
 public:
 	Sphere(GLuint steps = 12) : steps(steps) {}

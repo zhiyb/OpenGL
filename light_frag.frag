@@ -1,6 +1,7 @@
 #version 400
 
 out vec4 colour_out;
+uniform float ambient, diffuse, specular;
 uniform vec3 viewer;
 uniform vec3 light;
 uniform vec4 colour;
@@ -13,16 +14,14 @@ void main(void)
 {
 	vec3 normal = vertex.normal;
 
-	vec3 ambient = 0.2 * colour.rgb;
-	vec3 colourA = vec3(ambient);
+	vec3 colourA = ambient * colour.rgb;
 
-	float diffuse = max(dot(light, normal), 0.0);
-	colourA += diffuse * colour.rgb;
+	float cos_theta = max(dot(light, normal), 0.0);
+	colourA += diffuse * cos_theta * colour.rgb;
 
-	if (diffuse != 0.0) {
+	if (cos_theta != 0.0) {
 		vec3 reflect = 2.0 * dot(light, normal) * normal - light;
-		float specular = pow(max(dot(viewer, reflect), 0), 30);
-		colourA += max(specular, 0);
+		colourA += specular * min(pow(max(dot(viewer, reflect), 0.0), 30), 1.0);
 	}
 
 	colour_out = vec4(min(colourA, vec3(1.0)), colour.a);

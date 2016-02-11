@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <GL/glew.h>
-#include <GL/wglew.h>
 #include "global.h"
 #include "sphere.h"
 
@@ -17,6 +16,7 @@ void Sphere::setup()
 	setupVertices();
 	setupSolidIndices();
 	setupFrameIndices();
+	Object::setup();
 }
 
 void Sphere::renderSolid()

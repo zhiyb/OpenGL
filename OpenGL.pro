@@ -22,7 +22,9 @@ SOURCES += \
     main.cpp \
     helper.cpp \
     sphere.cpp \
-    object.cpp
+    object.cpp \
+    cube.cpp \
+    cone.cpp
 
 DISTFILES += \
     vertex.vert \
@@ -36,4 +38,6 @@ HEADERS += \
     helper.h \
     sphere.h \
     global.h \
-    object.h
+    object.h \
+    cube.h \
+    cone.h
