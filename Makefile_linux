@@ -1,0 +1,16 @@
+SRC	= cone.cpp cube.cpp helper.cpp main.cpp object.cpp sphere.cpp
+TRG	= OpenGL
+
+OBJ	= $(SRC:.cpp=.o)
+CXXFLAGS	+= -std=c++11
+LDFLAGS	+= -lglfw3 -lGLEW -lGL -lXxf86vm -lpthread -lXrandr -lXinerama -lXi -lXcursor -lX11 -ldl
+
+.PHONY: all
+all: $(TRG)
+
+$(TRG): $(OBJ)
+	$(CXX) $^ $(LDFLAGS) -o $(TRG)
+
+.PHONY: clean
+clean:
+	rm -f $(TRG) $(OBJ)
