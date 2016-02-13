@@ -34,10 +34,14 @@ static struct {
 } status;
 
 struct Model {
-	struct Position {
+	struct Data {
 		mat4 model;
+		vec4 colour;
+		struct Animation {
+			;
+		} animation;
 	};
-	vector<Position> position;
+	vector<Data> data;
 	Object *object;
 };
 vector<Model *> models;
@@ -50,24 +54,28 @@ void setupVertices()
 	sphere->setup();
 
 	Model *model;
-	Model::Position pos;
+	Model::Data data;
 
 	model = new Model;
 	model->object = new Sphere(32);
 	model->object->setup();
-	pos.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, -0.5f)), vec3(0.2f));
-	model->position.push_back(pos);
-	pos.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, 0.5f)), vec3(0.2f));
-	model->position.push_back(pos);
+	data.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, -0.5f)), vec3(0.2f));
+	data.colour = vec4(1.f, 0.f, 0.f, 1.f);
+	model->data.push_back(data);
+	data.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, 0.5f)), vec3(0.2f));
+	data.colour = vec4(0.f, 1.f, 1.f, 1.f);
+	model->data.push_back(data);
 	models.push_back(model);
 
 	model = new Model;
 	model->object = new Cube;
 	model->object->setup();
-	pos.model = scale(translate(mat4(), vec3(0.5f, -0.5f, -0.5f)), vec3(0.2f));
-	model->position.push_back(pos);
-	pos.model = scale(translate(mat4(), vec3(0.5f, -0.5f, 0.5f)), vec3(0.2f));
-	model->position.push_back(pos);
+	data.model = scale(translate(mat4(), vec3(0.5f, -0.5f, -0.5f)), vec3(0.2f));
+	data.colour = vec4(0.f, 1.f, 0.f, 1.f);
+	model->data.push_back(data);
+	data.model = scale(translate(mat4(), vec3(0.5f, -0.5f, 0.5f)), vec3(0.2f));
+	data.colour = vec4(1.f, 0.f, 1.f, 1.f);
+	model->data.push_back(data);
 	models.push_back(model);
 }
 
@@ -139,9 +147,10 @@ void render()
 		// moving along regular paths. These can be wireframe or solid.
 		for (Model *model: models) {
 			model->object->bind();
-			for (Model::Position pos: model->position) {
-				matrix.model = pos.model;
+			for (Model::Data data: model->data) {
+				matrix.model = data.model;
 				updateMatrices();
+				glUniform4fv(location["colour"], 1, (GLfloat *)&data.colour);
 				model->object->renderSolid();
 			}
 		}
@@ -168,7 +177,7 @@ void render()
 void timerCB()
 {
 	for (Model *model: models)
-		for (Model::Position &pos: model->position)
+		for (Model::Data &pos: model->data)
 			pos.model = rotate<GLfloat>(mat4(), pi<GLfloat>() / 100.f, vec3(1.f, 1.f, 1.f)) * pos.model;
 }
 
@@ -176,9 +185,11 @@ void refreshCB(GLFWwindow *window)
 {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	GLfloat asp = (GLfloat)height / (GLfloat)width;
+	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	glViewport(0, 0, width, height);
-	matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
+	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 10.f);
+	matrix.projection = matrix.projection * lookAt(vec3(0.f, 0.f, 2.f), vec3(), vec3(0.f, 1.f, 0.f));
 }
 
 void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -257,6 +268,7 @@ int main(int /*argc*/, char */*argv*/[])
 
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 	glewExperimental = GL_TRUE;
 	glewInit();
 
@@ -296,8 +308,7 @@ int main(int /*argc*/, char */*argv*/[])
 
 	double prev = glfwGetTime();
 	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
-	{
+	while (!glfwWindowShouldClose(window)) {
 		/* Render here */
 		render();
 
@@ -306,7 +317,7 @@ int main(int /*argc*/, char */*argv*/[])
 
 		/* Poll for and process events */
 		double now = glfwGetTime();
-		if (now - prev > 0.1) {
+		while (now - prev > 0.1) {
 			timerCB();
 			prev += 0.1;
 		}

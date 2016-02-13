@@ -1,6 +1,6 @@
 #version 400
 
-out vec4 colour_out;
+out vec4 FragColor;
 uniform float ambient, diffuse, specular;
 uniform vec3 viewer;
 uniform vec3 light;
@@ -24,5 +24,5 @@ void main(void)
 		colourA += specular * min(pow(max(dot(viewer, reflect), 0.0), 30), 1.0);
 	}
 
-	colour_out = vec4(min(colourA, vec3(1.0)), colour.a);
+	FragColor = vec4(min(colourA, vec3(1.0)), colour.a);
 }
