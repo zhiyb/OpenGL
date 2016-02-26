@@ -3,7 +3,6 @@
 #include <vector>
 #include <map>
 #include <GL/glew.h>
-#include <GL/wglew.h>
 #include "helper.h"
 
 using namespace std;
