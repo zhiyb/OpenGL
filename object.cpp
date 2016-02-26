@@ -10,7 +10,6 @@ using namespace glm;
 
 Object::Object()
 {
-
 }
 
 void Object::setup()
@@ -22,15 +21,22 @@ void Object::setup()
 	glGenBuffers(1, &bVertex);
 	glBindBuffer(GL_ARRAY_BUFFER, bVertex);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec3), vertices.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(location["position"]);
-	glVertexAttribPointer(location["position"], 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(ATTRIB_POSITION);
+	glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	GLuint bNormal;
 	glGenBuffers(1, &bNormal);
 	glBindBuffer(GL_ARRAY_BUFFER, bNormal);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), normals.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(location["normal"]);
-	glVertexAttribPointer(location["normal"], 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(ATTRIB_NORMAL);
+	glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	GLuint bTexCoord;
+	glGenBuffers(1, &bTexCoord);
+	glBindBuffer(GL_ARRAY_BUFFER, bTexCoord);
+	glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(vec2), texCoords.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+	glVertexAttribPointer(ATTRIB_TEXCOORD, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	GLuint bIndex;
 	glGenBuffers(1, &bIndex);

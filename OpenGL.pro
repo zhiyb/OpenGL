@@ -9,6 +9,7 @@ QMAKE_LFLAGS += -static
 
 DEFINES += GLEW_STATIC
 
+INCLUDEPATH += D:\Programs\misc\OpenGL\stb
 INCLUDEPATH += D:\Programs\misc\OpenGL\glm
 #INCLUDEPATH += D:\Programs\misc\OpenGL\glut
 INCLUDEPATH += D:\Programs\misc\OpenGL\glew-1.13.0\include
@@ -27,12 +28,12 @@ SOURCES += \
     cone.cpp
 
 DISTFILES += \
-    vertex.vert \
+    basic.vert \
     basic.frag \
-    light.frag \
-    light.vert \
-    light_frag.frag \
-    light_frag.vert
+    lighting.vert \
+    lighting.frag \
+    texture.vert \
+    texture.frag
 
 HEADERS += \
     helper.h \

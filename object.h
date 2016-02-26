@@ -15,6 +15,7 @@ public:
 protected:
 	GLuint vao;
 	std::vector<glm::vec3> vertices, normals;
+	std::vector<glm::vec2> texCoords;
 	std::vector<GLuint> indices;
 };
 

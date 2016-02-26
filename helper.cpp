@@ -53,11 +53,8 @@ GLuint setupShader(const GLenum type, const char *source)
 	return 0;
 }
 
-GLuint setupProgram(const GLuint *shaders)
+GLuint setupProgram(GLuint program, const GLuint *shaders)
 {
-	GLuint program = glCreateProgram();
-	if (!program)
-		return 0;
 	while (*shaders != 0)
 		glAttachShader(program, *shaders++);
 	glLinkProgram(program);
@@ -65,41 +62,44 @@ GLuint setupProgram(const GLuint *shaders)
 	int i;
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &i);
 	if (i > 1) {
-		cout << "Linking program:" << endl;
+		clog << "Linking program:" << endl;
 		char log[i];
 		glGetProgramInfoLog(program, i, &i, log);
-		cout.write(log, i);
+		clog.write(log, i);
 	}
 
 	glGetProgramiv(program, GL_LINK_STATUS, &i);
 	if (i == GL_TRUE)
-		return program;
+		return 0;
 	glDeleteProgram(program);
-	return 0;
+	return 1;
 }
 
-GLuint setupProgramFromFiles(const shader_t *shaders)
+GLuint setupProgramFromFiles(GLuint program, const shader_t *shaders)
 {
 	vector<GLuint> s;
-	GLuint program;
 	while (shaders->type != 0) {
 		GLuint sh = setupShaderFromFile(shaders->type, shaders->path);
-		if (sh == 0)
+		if (sh == 0) {
+			cerr << "Error setup shader " << shaders->path << endl;
 			goto failed;
+		}
 		s.push_back(sh);
 		shaders++;
 	}
 	s.push_back(0);
-	if ((program = setupProgram(s.data())) == 0)
+	if (setupProgram(program, s.data()) != 0) {
 		goto failed;
-	return program;
+		cerr << "Error setup program" << endl;
+	}
+	return 0;
 
 failed:
 	while (!s.empty()) {
 		glDeleteShader(s.back());
 		s.pop_back();
 	}
-	return 0;
+	return 1;
 }
 
 GLuint setupShaderFromFile(GLenum type, const char *path)

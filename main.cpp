@@ -8,37 +8,64 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <stb_image.h>
+
 #include "global.h"
 #include "helper.h"
 #include "sphere.h"
 #include "cube.h"
 
-#define FILE_VERTEX_SHADER	"light_frag.vert"
-#define FILE_FRAGMENT_SHADER	"light_frag.frag"
-
-#define SCENE_NUM	6
+#define SCENE_NUM	5
 #define SCENE_SCALE	0.7f
+#define CAMERA_MOVEMENT	0.05f
+#define CAMERA_ROTATE	(2.f * PI / 180.f)
+
+#define PI		(glm::pi<GLfloat>())
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
 
 using namespace std;
 using namespace glm;
 
-map<string, GLint> location;
+program_t programs[PROGRAM_COUNT];
+
 static struct {
 	mat4 model, view, projection;
+	mat4 mvp;
+	mat3 mv;
+	mat3 normal;
+
+	void update()
+	{
+		mvp = projection * view * model;
+		mv = mat3(view * model);
+		normal = mat3(transpose(inverse(view * model)));
+	}
 } matrix;
+
+static struct {
+	vec3 position;
+	quat rotation;
+	vec3 direction() {return rotation * vec3(0.f, 0.f, -1.f);}
+	vec3 upward() {return rotation * vec3(0.f, 1.f, 0.f);}
+} camera;
 
 static struct {
 	int scene;
 } status;
 
+static Sphere *sphere;
+
 struct Model {
 	struct Data {
-		mat4 model;
 		vec4 colour;
+		vec3 scale;
 		struct Animation {
-			;
+			vec3 centre, normal;
+			vec3 initpos;	// Relative to centre
+			GLfloat speed;
 		} animation;
 	};
 	vector<Data> data;
@@ -46,153 +73,212 @@ struct Model {
 };
 vector<Model *> models;
 
-static Object *sphere;
+void setupModelData(Model *model, const Model::Data *data, int size)
+{
+	while (size--)
+		model->data.push_back(*data++);
+}
 
 void setupVertices()
 {
-	sphere = new Sphere(48);
+	sphere = new Sphere(32);
 	sphere->setup();
 
 	Model *model;
-	Model::Data data;
+
+	static const Model::Data sphereModels[] = {
+		// colour, scale, {centre, normal, initpos, speed,},
+		{vec4(1.f, 0.f, 0.f, 1.f), vec3(0.25f),
+		 {vec3(0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.8f, 0.f), 0.25f,},},
+		{vec4(0.f, 1.f, 0.f, 1.f), vec3(0.125f),
+		 {vec3(0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 0.8f), 0.5f,},},
+		{vec4(0.f, 0.f, 1.f, 1.f), vec3(0.0625f),
+		 {vec3(0.f), vec3(0.f, 0.f, 1.f), vec3(0.8f, 0.f, 0.f), 1.f,},},
+	};
 
 	model = new Model;
 	model->object = new Sphere(32);
 	model->object->setup();
-	data.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, -0.5f)), vec3(0.2f));
-	data.colour = vec4(1.f, 0.f, 0.f, 1.f);
-	model->data.push_back(data);
-	data.model = scale(translate(mat4(), vec3(-0.5f, -0.5f, 0.5f)), vec3(0.2f));
-	data.colour = vec4(0.f, 1.f, 1.f, 1.f);
-	model->data.push_back(data);
+	setupModelData(model, sphereModels, ARRAY_SIZE(sphereModels));
 	models.push_back(model);
+
+	static const Model::Data cubeModels[] = {
+		// colour, scale, {centre, normal, initpos, speed,},
+		{vec4(0.2f, 0.4f, 1.f, 1.f), vec3(0.2f),
+		 {vec3(0.5f, 0.f, 0.f), vec3(1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), 0.3f,},},
+		{vec4(1.f, 1.f, 0.f, 1.f), vec3(0.1f),
+		 {vec3(-0.5f, 0.f, 0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.5f, 0.f), 0.2f,},},
+	};
 
 	model = new Model;
-	model->object = new Cube;
+	model->object = new Cube();
 	model->object->setup();
-	data.model = scale(translate(mat4(), vec3(0.5f, -0.5f, -0.5f)), vec3(0.2f));
-	data.colour = vec4(0.f, 1.f, 0.f, 1.f);
-	model->data.push_back(data);
-	data.model = scale(translate(mat4(), vec3(0.5f, -0.5f, 0.5f)), vec3(0.2f));
-	data.colour = vec4(1.f, 0.f, 1.f, 1.f);
-	model->data.push_back(data);
+	setupModelData(model, cubeModels, ARRAY_SIZE(cubeModels));
 	models.push_back(model);
 }
 
-void updateMatrices()
+void sceneA()
 {
-	mat4 mvpMatrix = matrix.projection * matrix.view * matrix.model;
-	glUniformMatrix4fv(location["mvpMatrix"], 1, GL_FALSE, (GLfloat *)&mvpMatrix);
-	mat4 normalMatrix = transpose(inverse(matrix.view * matrix.model));
-	glUniformMatrix4fv(location["normalMatrix"], 1, GL_FALSE, (GLfloat *)&normalMatrix);
+	// (A) Draw a wire-frame sphere by calculating all
+	// the vertex positions and drawing lines between them.
+	glUseProgram(programs[PROGRAM_BASIC].id);
+	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
+
+	glUniform4f(uniforms[UNIFORM_COLOUR], 0.1f, 0.2f, 1.f, 1.f);
+
+	matrix.model = scale(mat4(), vec3(SCENE_SCALE));
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+
+	sphere->bind();
+	sphere->renderFrame();
 }
 
-void updateModel(const vec4 colour, const vec3 pos, const vec3 scale)
+void sceneB()
 {
-	glUniform4fv(location["colour"], 1, (GLfloat *)&colour);
+	// (B) For the sphere, work out the surface normal direction and
+	// augment your wire-frame drawing with short lines representing
+	// the normal direction of each vertex.
+	// The sphere should now appear to be a hedgehog.
+	sceneA();
+	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
+	glUniform4f(uniforms[UNIFORM_COLOUR], 1.f, 0.f, 0.f, 1.f);
+	sphere->renderNormal();
+}
+
+void sceneC()
+{
+	// (C) Use the normal information calculated in (b) above work out
+	// the amount of illumination falling on each vertex.
+	// Assume that the light source is at infinity and is co-axial
+	// with the viewpoint. Use this to draw a shaded sphere.
+	glUseProgram(programs[PROGRAM_LIGHTING].id);
+	GLint *uniforms = programs[PROGRAM_LIGHTING].uniforms;
+
+	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
+	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+
+	vec4 colour(0.f, 0.f, 1.f, 1.f);
+	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
+
+	matrix.model = scale(mat4(), vec3(0.8));
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	sphere->bind();
+	sphere->renderSolid();
+}
+
+void sceneD()
+{
+	// (D) Develop a simple animation showing a number of cones and spheres
+	// moving along regular paths. These can be wireframe or solid.
+	glUseProgram(programs[PROGRAM_LIGHTING].id);
+	GLint *uniforms = programs[PROGRAM_LIGHTING].uniforms;
+
+	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
+	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+
+	float time = glfwGetTime();
+	for (Model *model: models) {
+		model->object->bind();
+		for (Model::Data &data: model->data) {
+			// Calculate model matrix based on animation data
+			Model::Data::Animation &ani = data.animation;
+			GLfloat angle = time * ani.speed * PI * 2;
+			matrix.model = mat4();
+			matrix.model = translate(matrix.model, ani.centre);
+			matrix.model = rotate(matrix.model, angle, ani.normal);
+			matrix.model = translate(matrix.model, ani.initpos);
+			matrix.model = scale(matrix.model, data.scale);
+
+			matrix.update();
+			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
+			model->object->renderSolid();
+		}
+	}
+}
+
+void sceneE()
+{
+	// (E) Draw a textured object, such as a rectangle (plane), box or sphere.
+	glUseProgram(programs[PROGRAM_TEXTURE].id);
+	GLint *uniforms = programs[PROGRAM_TEXTURE].uniforms;
+
+	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
+	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+
+	vec4 colour(0.f, 0.f, 1.f, 1.f);
+	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
+
+	vec3 pos(0.f);
+	vec3 scale(0.8);
 	matrix.model = glm::scale(translate(mat4(), pos), scale);
-	updateMatrices();
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	glUniform4f(uniforms[UNIFORM_COLOUR], 0.4f, 0.8f, 1.f, 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.3f);
+	sphere->bind();
+	sphere->renderSolid();
 }
 
-void render()
+static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Light source
-	vec3 light(0.f, 0.f, 1.f);
-	glUniform3fv(location["light"], 1, (GLfloat *)&light);
-	vec3 viewer(0.f, 0.f, 1.f);
-	glUniform3fv(location["viewer"], 1, (GLfloat *)&viewer);
-	updateMatrices();
-	glUniform1f(location["ambient"], 0.3f);
-	glUniform1f(location["diffuse"], 1.f);
-	glUniform1f(location["specular"], 1.f);
-	updateModel(vec4(1.f), light, vec3(0.03f));
-	sphere->bind();
-	sphere->renderSolid();
+	matrix.view = lookAt(camera.position, camera.position + camera.direction(), camera.upward());
 
-	// Scene
-	matrix.model = scale(mat4(), vec3(SCENE_SCALE, SCENE_SCALE, SCENE_SCALE));
-	updateMatrices();
-
-	//static const float scale = SCENE_SCALE / 4, offset = 0.35f;
-	switch (status.scene) {
-	case 0:
-		// (A) Draw a wire-frame sphere by calculating all
-		// the vertex positions and drawing lines between them.
-		glUniform4f(location["colour"], 0.1f, 0.2f, 1.f, 1.f);
-		sphere->renderFrame();
-		break;
-	case 1:
-		// (B) For the sphere, work out the surface normal direction and
-		// augment your wire-frame drawing with short lines representing
-		// the normal direction of each vertex.
-		// The sphere should now appear to be a hedgehog.
-		glUniform4f(location["colour"], 0.1f, 0.2f, 1.f, 1.f);
-		sphere->renderFrame();
-		glUniform4f(location["colour"], 1.f, 0.f, 0.f, 1.f);
-		sphere->renderNormal();
-		break;
-	case 2:
-		// (C) Use the normal information calculated in (b) above work out
-		// the amount of illumination falling on each vertex.
-		// Assume that the light source is at infinity and is co-axial
-		// with the viewpoint. Use this to draw a shaded sphere.
-		updateModel(vec4(0.f, 0.f, 1.f, 1.f), vec3(0.f), vec3(0.8));
-		sphere->renderSolid();
-		break;
-	case 3:
-		// (D) Develop a simple animation showing a number of cones and spheres
-		// moving along regular paths. These can be wireframe or solid.
-		for (Model *model: models) {
-			model->object->bind();
-			for (Model::Data data: model->data) {
-				matrix.model = data.model;
-				updateMatrices();
-				glUniform4fv(location["colour"], 1, (GLfloat *)&data.colour);
-				model->object->renderSolid();
-			}
-		}
-		break;
-	case 4:
-		// (E) Draw a textured object, such as a rectangle (plane), box or sphere.
-		glUniform4f(location["colour"], 0.4f, 0.8f, 1.f, 1.f);
-		glUniform1f(location["specular"], 0.3f);
-		sphere->renderSolid();
-		break;
-	case 5:
-		updateModel(vec4(1.f, 0.f, 0.f, 1.f), vec3(0.f), vec3(SCENE_SCALE + 0.05f));
-		sphere->renderFrame();
-		updateModel(vec4(0.f, 1.f, 0.f, 1.f), vec3(0.f), vec3(SCENE_SCALE - 0.05f));
-		sphere->renderSolid();
-		updateModel(vec4(0.f, 0.f, 1.f, 0.7f), vec3(0.f), vec3(SCENE_SCALE));
-		sphere->renderSolid();
-		glUniform4f(location["colour"], 0.f, 1.f, 0.f, 1.f);
-		sphere->renderNormal();
-		break;
-	}
+	void (*scenes[])() = {sceneA, sceneB, sceneC, sceneD, sceneE};
+	(*scenes[status.scene])();
 }
 
-void timerCB()
-{
-	for (Model *model: models)
-		for (Model::Data &pos: model->data)
-			pos.model = rotate<GLfloat>(mat4(), pi<GLfloat>() / 100.f, vec3(1.f, 1.f, 1.f)) * pos.model;
-}
-
-void refreshCB(GLFWwindow *window)
+static void refreshCB(GLFWwindow *window)
 {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	glViewport(0, 0, width, height);
+	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 10.f);
-	matrix.projection = matrix.projection * lookAt(vec3(0.f, 0.f, 2.f), vec3(), vec3(0.f, 1.f, 0.f));
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 100.f);
 }
 
-void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
+static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
 {
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
@@ -211,51 +297,114 @@ void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*
 		return;
 	}
 
-	vec3 rot;
 	switch (key) {
+	case GLFW_KEY_K:	// Look upward
+		camera.rotation = rotate(camera.rotation, CAMERA_ROTATE, vec3(1.f, 0.f, 0.f));
+		break;
+	case GLFW_KEY_J:	// Look downward
+		camera.rotation = rotate(camera.rotation, -CAMERA_ROTATE, vec3(1.f, 0.f, 0.f));
+		break;
+	case GLFW_KEY_H:
+		camera.rotation = rotate(camera.rotation, CAMERA_ROTATE, vec3(0.f, 1.f, 0.f));
+		break;
+	case GLFW_KEY_L:
+		camera.rotation = rotate(camera.rotation, -CAMERA_ROTATE, vec3(0.f, 1.f, 0.f));
+		break;
 	case GLFW_KEY_UP:
-		rot = -vec3(1.f, 0.f, 0.f);
+		camera.position += camera.rotation * vec3(0.f, CAMERA_MOVEMENT, 0.f);
 		break;
 	case GLFW_KEY_DOWN:
-		rot = vec3(1.f, 0.f, 0.f);
+		camera.position -= camera.rotation * vec3(0.f, CAMERA_MOVEMENT, 0.f);
 		break;
 	case GLFW_KEY_LEFT:
-		rot = -vec3(0.f, 1.f, 0.f);
+		camera.position -= camera.rotation * vec3(CAMERA_MOVEMENT, 0.f, 0.f);
 		break;
 	case GLFW_KEY_RIGHT:
-		rot = vec3(0.f, 1.f, 0.f);
+		camera.position += camera.rotation * vec3(CAMERA_MOVEMENT, 0.f, 0.f);
 		break;
-	case GLFW_KEY_PAGE_UP:
-		rot = -vec3(0.f, 0.f, 1.f);
+	case GLFW_KEY_PAGE_UP:	// Move forward
+		camera.position += camera.direction() * CAMERA_MOVEMENT;
 		break;
-	case GLFW_KEY_PAGE_DOWN:
-		rot = vec3(0.f, 0.f, 1.f);
+	case GLFW_KEY_PAGE_DOWN:	// Move backward
+		camera.position -= camera.direction() * CAMERA_MOVEMENT;
 		break;
 	case GLFW_KEY_R:
-		matrix.view = mat4x4();
+		camera.position = vec3(0.f, 0.f, 2.f);
+		camera.rotation = quat();
 	default:
 		return;
 	}
-	matrix.view = rotate(mat4(), pi<GLfloat>() / 72.f, rot) * matrix.view;
 }
 
-void getUniforms(GLuint program, const char **uniforms)
+void setupUniforms(GLuint index)
 {
+	static const char *names[UNIFORM_COUNT] = {
+		[UNIFORM_MVP]		= "mvpMatrix",
+		[UNIFORM_MODEL]		= "modelMatrix",
+		[UNIFORM_NORMAL]	= "normalMatrix",
+		[UNIFORM_AMBIENT]	= "ambient",
+		[UNIFORM_DIFFUSE]	= "diffuse",
+		[UNIFORM_SPECULAR]	= "specular",
+		[UNIFORM_SPECULARPOWER]	= "specularPower",
+		[UNIFORM_VIEWER]	= "viewer",
+		[UNIFORM_LIGHT]		= "light",
+		[UNIFORM_COLOUR]	= "colour",
+	};
+	GLuint program = programs[index].id;
 	if (!program)
 		return;
-	while (*uniforms) {
-		location[*uniforms] = glGetUniformLocation(program, *uniforms);
-		uniforms++;
+	for (GLuint idx = 0; idx < UNIFORM_COUNT; idx++)
+		programs[index].uniforms[idx] = glGetUniformLocation(program, names[idx]);
+}
+
+GLuint setupPrograms()
+{
+	static const shader_t shaders[PROGRAM_COUNT][3] = {
+		[PROGRAM_BASIC] = {
+			{GL_VERTEX_SHADER, "basic.vert"},
+			{GL_FRAGMENT_SHADER, "basic.frag"},
+			{0, NULL}
+		},
+		[PROGRAM_LIGHTING] = {
+			{GL_VERTEX_SHADER, "lighting.vert"},
+			{GL_FRAGMENT_SHADER, "lighting.frag"},
+			{0, NULL}
+		},
+		[PROGRAM_TEXTURE] = {
+			{GL_VERTEX_SHADER, "texture.vert"},
+			{GL_FRAGMENT_SHADER, "texture.frag"},
+			{0, NULL}
+		},
+	};
+
+	for (GLuint idx = 0; idx < PROGRAM_COUNT; idx++) {
+		GLuint program = glCreateProgram();
+		if (program == 0)
+			return 1;
+		programs[idx].id = program;
+		glBindAttribLocation(program, ATTRIB_POSITION, "position");
+		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
+		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texcoord");
+		if (setupProgramFromFiles(program, shaders[idx]) != 0)
+			return 2;
+		setupUniforms(idx);
 	}
+	return 0;
+}
+
+GLuint setupTextures()
+{
+	const static char *textures[TEXTURE_COUNT] = {
+		[TEXTURE_SPHERE] = "earth.jpg",
+	};
+	return 0;
 }
 
 int main(int /*argc*/, char */*argv*/[])
 {
-	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
 
-	/* Create a windowed mode window and its OpenGL context */
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -263,68 +412,60 @@ int main(int /*argc*/, char */*argv*/[])
 	GLFWwindow *window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window) {
 		glfwTerminate();
-		return -1;
+		return -2;
 	}
 
-	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	/* Setup render program */
-	shader_t shaders[] = {
-		{GL_VERTEX_SHADER, FILE_VERTEX_SHADER},
-		{GL_FRAGMENT_SHADER, FILE_FRAGMENT_SHADER},
-		{0, NULL}
-	};
-	GLuint program = setupProgramFromFiles(shaders);
-	if (program == 0) {
+	if (setupPrograms()) {
 		glfwTerminate();
-		return -1;
+		return -3;
 	}
-	glUseProgram(program);
-	location["position"] = glGetAttribLocation(program, "position");
-	location["normal"] = glGetAttribLocation(program, "normal");
-	const char *uniforms[] = {
-		"colour", "light", "viewer",
-		"mvpMatrix", "normalMatrix",
-		"ambient", "diffuse", "specular", 0
-	};
-	getUniforms(program, uniforms);
+
+	if (setupTextures()) {
+		glfwTerminate();
+		return -4;
+	}
 
 	setupVertices();
 	status.scene = 0;
-	matrix.view = rotate(mat4(), -pi<GLfloat>() / 4.f, vec3(1.f, 1.f, 0.f));
+	camera.position = vec3(0.f, 0.f, 2.f);
+	camera.rotation = quat();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	refreshCB(window);
 
-	double prev = glfwGetTime();
-	/* Loop until the user closes the window */
+	float past = glfwGetTime();
+	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
-		/* Render here */
 		render();
-
-		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
 
-		/* Poll for and process events */
-		double now = glfwGetTime();
-		while (now - prev > 0.1) {
-			timerCB();
-			prev += 0.1;
+		// FPS counter
+		count++;
+		float now = glfwGetTime();
+		if (now - past > 3) {
+			float fps = (float)count / (now - past);
+			char buf[32];
+			sprintf(buf, "%g FPS", fps);
+			glfwSetWindowTitle(window, buf);
+			count = 0;
+			past = now;
 		}
-		//glfwWaitEvents();
+
 		glfwPollEvents();
 	}
 
 	glfwTerminate();
+	// TODO: Free the models?
 	return 0;
 }

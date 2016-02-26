@@ -6,7 +6,7 @@
 #include "global.h"
 #include "sphere.h"
 
-#define TRIANGLES	4
+#define PI		(pi<GLfloat>())
 
 using namespace std;
 using namespace glm;
@@ -44,7 +44,7 @@ void Sphere::renderNormal()
 	glDrawElements(GL_LINES, offset.count.normalView, GL_UNSIGNED_INT, (void *)(offset.index.normalView * sizeof(GLuint)));
 }
 
-void Sphere::addVertex(const glm::vec3 &vertex)
+void Sphere::addVertex(const vec3 &vertex)
 {
 	vertices.push_back(vertex);
 	normals.push_back(glm::normalize(vertex));
@@ -53,18 +53,18 @@ void Sphere::addVertex(const glm::vec3 &vertex)
 void Sphere::setupVertices()
 {
 	offset.vertex = vertices.size();
-	addVertex(glm::vec3(0.f, 0.f, 1.f));
+	addVertex(vec3(0.f, 0.f, 1.f));
 	for (unsigned int j = 1; j < steps; j++) {
-		GLfloat theta = glm::pi<GLfloat>() * (GLfloat)j / (GLfloat)steps;
+		GLfloat theta = PI * (GLfloat)j / (GLfloat)steps;
 		GLfloat z = cos(theta);
 		for (unsigned int i = 0; i < steps; i++) {
-			GLfloat phi = glm::pi<GLfloat>() * 2.f * (GLfloat)i / (GLfloat)steps;
+			GLfloat phi = PI * 2.f * (GLfloat)i / (GLfloat)steps;
 			GLfloat x = sin(theta) * cos(phi);
 			GLfloat y = sin(theta) * sin(phi);
-			addVertex(glm::vec3(x, y, z));
+			addVertex(vec3(x, y, z));
 		}
 	}
-	addVertex(glm::vec3(0.f, 0.f, -1.f));
+	addVertex(vec3(0.f, 0.f, -1.f));
 	offset.count.vertex = vertices.size() - offset.vertex;
 
 	offset.normalView = vertices.size();
