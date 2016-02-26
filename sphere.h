@@ -21,7 +21,6 @@ private:
 
 	GLuint steps;
 	struct {
-		GLuint vertex;
 		GLuint normalView;
 		struct {
 			GLuint solid;

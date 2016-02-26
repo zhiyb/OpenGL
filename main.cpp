@@ -11,6 +11,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include "global.h"
@@ -22,6 +24,7 @@
 #define SCENE_SCALE	0.7f
 #define CAMERA_MOVEMENT	0.05f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
+#define WORLD_ROTATE	(2.f * PI / 180.f)
 
 #define PI		(glm::pi<GLfloat>())
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
@@ -30,30 +33,35 @@ using namespace std;
 using namespace glm;
 
 program_t programs[PROGRAM_COUNT];
+texture_t textures[TEXTURE_COUNT];
 
 static struct {
 	mat4 model, view, projection;
 	mat4 mvp;
-	mat3 mv;
 	mat3 normal;
+
+	struct {
+		quat rotation;
+	} world;
 
 	void update()
 	{
+		model = mat4(world.rotation) * model;
 		mvp = projection * view * model;
-		mv = mat3(view * model);
 		normal = mat3(transpose(inverse(view * model)));
 	}
 } matrix;
 
-static struct {
+static struct Camera {
 	vec3 position;
 	quat rotation;
 	vec3 direction() {return rotation * vec3(0.f, 0.f, -1.f);}
 	vec3 upward() {return rotation * vec3(0.f, 1.f, 0.f);}
 } camera;
 
-static struct {
+static struct Status {
 	int scene;
+	enum {CameraMode = 0, WorldMode} mode;
 } status;
 
 static Sphere *sphere;
@@ -156,6 +164,7 @@ void sceneC()
 	GLint *uniforms = programs[PROGRAM_LIGHTING].uniforms;
 
 	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
@@ -228,8 +237,8 @@ void sceneE()
 	glUseProgram(programs[PROGRAM_TEXTURE].id);
 	GLint *uniforms = programs[PROGRAM_TEXTURE].uniforms;
 
-	vec3 light(0.f, 0.f, 1.f);	// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	vec3 light(1.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(normalize(light), 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
@@ -240,19 +249,16 @@ void sceneE()
 	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
 	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
 
-	vec4 colour(0.f, 0.f, 1.f, 1.f);
-	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
-
-	vec3 pos(0.f);
-	vec3 scale(0.8);
-	matrix.model = glm::scale(translate(mat4(), pos), scale);
+	matrix.model = scale(mat4(), vec3(0.8));
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	glUniform4f(uniforms[UNIFORM_COLOUR], 0.4f, 0.8f, 1.f, 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.3f);
+	texture_t *tex = &textures[TEXTURE_SPHERE];
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tex->pbo);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex->x, tex->y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
 	sphere->bind();
 	sphere->renderSolid();
 }
@@ -263,6 +269,7 @@ static void render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	matrix.view = lookAt(camera.position, camera.position + camera.direction(), camera.upward());
+	//matrix.view = matrix.view * mat4(matrix.world.rotation);
 
 	void (*scenes[])() = {sceneA, sceneB, sceneC, sceneD, sceneE};
 	(*scenes[status.scene])();
@@ -289,6 +296,9 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		glfwTerminate();
 		exit(0);
 		return;
+	case GLFW_KEY_M:
+		status.mode = status.mode == Status::WorldMode ? Status::CameraMode : Status::WorldMode;
+		return;
 	case GLFW_KEY_A ... (GLFW_KEY_A + SCENE_NUM - 1):
 		status.scene = key - GLFW_KEY_A;
 		return;
@@ -296,6 +306,9 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		status.scene = (status.scene + 1) % SCENE_NUM;
 		return;
 	}
+
+	if (status.mode == Status::WorldMode)
+		goto worldMode;
 
 	switch (key) {
 	case GLFW_KEY_K:	// Look upward
@@ -331,9 +344,36 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	case GLFW_KEY_R:
 		camera.position = vec3(0.f, 0.f, 2.f);
 		camera.rotation = quat();
+	}
+	return;
+
+worldMode:
+	vec3 rot;
+	switch (key) {
+	case GLFW_KEY_UP:
+		rot = vec3(1.f, 0.f, 0.f);
+		break;
+	case GLFW_KEY_DOWN:
+		rot = vec3(-1.f, 0.f, 0.f);
+		break;
+	case GLFW_KEY_LEFT:
+		rot = vec3(0.f, 1.f, 0.f);
+		break;
+	case GLFW_KEY_RIGHT:
+		rot = vec3(0.f, -1.f, 0.f);
+		break;
+	case GLFW_KEY_PAGE_UP:
+		rot = vec3(0.f, 0.f, 1.f);
+		break;
+	case GLFW_KEY_PAGE_DOWN:
+		rot = vec3(0.f, 0.f, -1.f);
+		break;
+	case GLFW_KEY_R:
+		matrix.world.rotation = quat();
 	default:
 		return;
 	}
+	matrix.world.rotation = rotate(quat(), -WORLD_ROTATE, rot) * matrix.world.rotation;
 }
 
 void setupUniforms(GLuint index)
@@ -384,7 +424,7 @@ GLuint setupPrograms()
 		programs[idx].id = program;
 		glBindAttribLocation(program, ATTRIB_POSITION, "position");
 		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
-		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texcoord");
+		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texCoord");
 		if (setupProgramFromFiles(program, shaders[idx]) != 0)
 			return 2;
 		setupUniforms(idx);
@@ -394,9 +434,34 @@ GLuint setupPrograms()
 
 GLuint setupTextures()
 {
-	const static char *textures[TEXTURE_COUNT] = {
+	const static char *files[TEXTURE_COUNT] = {
 		[TEXTURE_SPHERE] = "earth.jpg",
 	};
+
+	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
+		texture_t *tex = &textures[i];
+		unsigned char *data = stbi_load(files[i], &tex->x, &tex->y, &tex->n, 3);
+		if (data == 0) {
+			cerr << "Error load texture file " << files[i] << endl;
+			return 1;
+		}
+		if (tex->n != 3) {
+			cerr << "Invalid image format from texture file " << files[i] << endl;
+			stbi_image_free(data);
+			return 2;
+		}
+		glGenBuffers(1, &tex->pbo);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tex->pbo);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, tex->x * tex->y * tex->n, data, GL_STATIC_DRAW);
+		stbi_image_free(data);
+	}
+
+	GLuint texture;
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	return 0;
 }
 
@@ -430,15 +495,17 @@ int main(int /*argc*/, char */*argv*/[])
 		return -4;
 	}
 
-	setupVertices();
-	status.scene = 0;
-	camera.position = vec3(0.f, 0.f, 2.f);
-	camera.rotation = quat();
-
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	setupVertices();
+	status.scene = 0;
+	status.mode = Status::CameraMode;
+	camera.position = vec3(0.f, 0.f, 2.f);
+	camera.rotation = quat();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
@@ -456,7 +523,7 @@ int main(int /*argc*/, char */*argv*/[])
 		if (now - past > 3) {
 			float fps = (float)count / (now - past);
 			char buf[32];
-			sprintf(buf, "%g FPS", fps);
+			sprintf(buf, "%g FPS [%s]", fps, status.mode == Status::CameraMode ? "Camera" : "World");
 			glfwSetWindowTitle(window, buf);
 			count = 0;
 			past = now;

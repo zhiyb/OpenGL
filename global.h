@@ -49,6 +49,11 @@ struct program_t {
 	GLuint id;
 };
 extern program_t programs[PROGRAM_COUNT];
-extern GLuint pbo[TEXTURE_COUNT];
+
+struct texture_t {
+	GLuint pbo;
+	int x, y, n;
+};
+extern texture_t textures[TEXTURE_COUNT];
 
 #endif // GLOBAL_H

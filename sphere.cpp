@@ -21,12 +21,7 @@ void Sphere::setup()
 
 void Sphere::renderSolid()
 {
-	GLuint index = offset.index.solid * sizeof(GLuint);
-	glDrawElements(GL_TRIANGLE_FAN, 2 + steps, GL_UNSIGNED_INT, (void *)index);
-	index += sizeof(GLuint) * (steps + 2);
-	glDrawElements(GL_TRIANGLE_STRIP, (steps - 2) * (2 + steps * 2), GL_UNSIGNED_INT, (void *)index);
-	index += sizeof(GLuint) * (steps - 2) * (2 + steps * 2);
-	glDrawElements(GL_TRIANGLE_FAN, 2 + steps, GL_UNSIGNED_INT, (void *)index);
+	glDrawElements(GL_TRIANGLE_STRIP, offset.count.solid, GL_UNSIGNED_INT, (void *)(offset.index.solid * sizeof(GLint)));
 }
 
 void Sphere::renderFrame()
@@ -36,7 +31,7 @@ void Sphere::renderFrame()
 
 void Sphere::renderPoints()
 {
-	glDrawArrays(GL_POINTS, offset.vertex, offset.count.vertex);
+	glDrawArrays(GL_POINTS, 0, offset.count.vertex);
 }
 
 void Sphere::renderNormal()
@@ -52,27 +47,25 @@ void Sphere::addVertex(const vec3 &vertex)
 
 void Sphere::setupVertices()
 {
-	offset.vertex = vertices.size();
-	addVertex(vec3(0.f, 0.f, 1.f));
-	for (unsigned int j = 1; j < steps; j++) {
+	for (unsigned int j = 0; j <= steps; j++) {
 		GLfloat theta = PI * (GLfloat)j / (GLfloat)steps;
 		GLfloat z = cos(theta);
-		for (unsigned int i = 0; i < steps; i++) {
+		for (unsigned int i = 0; i <= steps; i++) {
 			GLfloat phi = PI * 2.f * (GLfloat)i / (GLfloat)steps;
 			GLfloat x = sin(theta) * cos(phi);
 			GLfloat y = sin(theta) * sin(phi);
 			addVertex(vec3(x, y, z));
+			texCoords.push_back(vec2((GLfloat)i / steps, (GLfloat)j / steps));
 		}
 	}
-	addVertex(vec3(0.f, 0.f, -1.f));
-	offset.count.vertex = vertices.size() - offset.vertex;
+	offset.count.vertex = vertices.size();
 
 	offset.normalView = vertices.size();
-	for (unsigned int i = offset.vertex; i < offset.normalView; i++)
+	for (unsigned int i = 0; i < offset.normalView; i++)
 		addVertex(vertices[i] + 0.2f * normals[i]);
 	offset.index.normalView = indices.size();
 	for (unsigned int i = 0; i < offset.count.vertex; i++) {
-		indices.push_back(i + offset.vertex);
+		indices.push_back(i);
 		indices.push_back(i + offset.normalView);
 	}
 	offset.count.normalView = indices.size() - offset.index.normalView;
@@ -81,52 +74,32 @@ void Sphere::setupVertices()
 void Sphere::setupSolidIndices()
 {
 	offset.index.solid = indices.size();
-	GLushort index = offset.vertex + 1;
-	indices.push_back(offset.vertex);
-	for (GLushort i = 0; i < steps; i++)
-		indices.push_back(index + i);
-	indices.push_back(index);
-	for (GLushort j = 0; j < steps - 2; j++) {
-		for (GLushort i = 0; i < steps; i++) {
+	GLushort index = 0;
+	for (GLushort j = 0; j < steps; j++) {
+		for (GLushort i = 0; i <= steps; i++) {
 			indices.push_back(index + i);
-			indices.push_back(index + i + steps);
+			indices.push_back(index + i + steps + 1);
 		}
-		indices.push_back(index);
-		indices.push_back(index + steps);
-		index += steps;
+		index += steps + 1;
 	}
-	// For bottom, the order need to be inverted, for normal direction
-	indices.push_back(index + steps);
-	for (GLushort i = 0; i < steps; i++)
-		indices.push_back(index + steps - 1 - i);
-	indices.push_back(index + steps - 1);
 	offset.count.solid = indices.size() - offset.index.solid;
 }
 
 void Sphere::setupFrameIndices()
 {
 	offset.index.frame = indices.size();
-	unsigned int index = offset.vertex + 1;
-	for (unsigned int i = 0; i < steps; i++) {
-		indices.push_back(offset.vertex);
-		indices.push_back(index + i);
-	}
-	for (unsigned int j = 0; j < steps - 1; j++) {
+	unsigned int index = 0;
+	for (unsigned int j = 0; j < steps; j++) {
+		if (j != 0)
+			for (unsigned int i = 0; i < steps; i++) {
+				indices.push_back(index + i);
+				indices.push_back(index + i + 1);
+			}
 		for (unsigned int i = 0; i < steps; i++) {
 			indices.push_back(index + i);
-			indices.push_back(i == steps - 1 ? index : index + i + 1);
+			indices.push_back(index + i + steps + 1);
 		}
-		if (j == steps - 2)
-			break;
-		for (unsigned int i = 0; i < steps; i++) {
-			indices.push_back(index + i);
-			indices.push_back(index + i + steps);
-		}
-		index += steps;
-	}
-	for (unsigned int i = 0; i < steps; i++) {
-		indices.push_back(index + i);
-		indices.push_back(index + steps);
+		index += steps + 1;
 	}
 	offset.count.frame = indices.size() - offset.index.frame;
 }

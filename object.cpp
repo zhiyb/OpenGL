@@ -36,7 +36,7 @@ void Object::setup()
 	glBindBuffer(GL_ARRAY_BUFFER, bTexCoord);
 	glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(vec2), texCoords.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
-	glVertexAttribPointer(ATTRIB_TEXCOORD, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	GLuint bIndex;
 	glGenBuffers(1, &bIndex);
