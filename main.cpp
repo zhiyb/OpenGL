@@ -32,6 +32,8 @@
 using namespace std;
 using namespace glm;
 
+GLFWwindow *window;
+
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
@@ -61,15 +63,19 @@ static struct Camera {
 
 static struct Status {
 	int scene;
-	enum {CameraMode = 0, WorldMode} mode;
+	enum {WorldMode = 0, CameraMode} mode;
 } status;
 
 static Sphere *sphere;
 
 struct Model {
 	struct Data {
-		vec4 colour;
+		union {
+			vec4 colour;
+			GLuint texture;
+		};
 		vec3 scale;
+		enum {Wireframe, Solid, Textured} type;
 		struct Animation {
 			vec3 centre, normal;
 			vec3 initpos;	// Relative to centre
@@ -96,11 +102,11 @@ void setupVertices()
 
 	static const Model::Data sphereModels[] = {
 		// colour, scale, {centre, normal, initpos, speed,},
-		{vec4(1.f, 0.f, 0.f, 1.f), vec3(0.25f),
+		{{.texture = TEXTURE_S2}, vec3(0.25f), Model::Data::Textured,
 		 {vec3(0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.8f, 0.f), 0.25f,},},
-		{vec4(0.f, 1.f, 0.f, 1.f), vec3(0.125f),
+		{vec4(0.f, 1.f, 0.f, 1.f), vec3(0.125f), Model::Data::Wireframe,
 		 {vec3(0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 0.8f), 0.5f,},},
-		{vec4(0.f, 0.f, 1.f, 1.f), vec3(0.0625f),
+		{vec4(0.f, 0.f, 1.f, 1.f), vec3(0.0625f), Model::Data::Solid,
 		 {vec3(0.f), vec3(0.f, 0.f, 1.f), vec3(0.8f, 0.f, 0.f), 1.f,},},
 	};
 
@@ -112,9 +118,9 @@ void setupVertices()
 
 	static const Model::Data cubeModels[] = {
 		// colour, scale, {centre, normal, initpos, speed,},
-		{vec4(0.2f, 0.4f, 1.f, 1.f), vec3(0.2f),
+		{vec4(0.2f, 0.4f, 1.f, 1.f), vec3(0.2f), Model::Data::Solid,
 		 {vec3(0.5f, 0.f, 0.f), vec3(1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), 0.3f,},},
-		{vec4(1.f, 1.f, 0.f, 1.f), vec3(0.1f),
+		{vec4(1.f, 1.f, 0.f, 1.f), vec3(0.1f), Model::Data::Solid,
 		 {vec3(-0.5f, 0.f, 0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.5f, 0.f), 0.2f,},},
 	};
 
@@ -139,7 +145,7 @@ void sceneA()
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	sphere->bind();
-	sphere->renderFrame();
+	sphere->renderWireframe();
 }
 
 void sceneB()
@@ -192,25 +198,17 @@ void sceneD()
 {
 	// (D) Develop a simple animation showing a number of cones and spheres
 	// moving along regular paths. These can be wireframe or solid.
-	glUseProgram(programs[PROGRAM_LIGHTING].id);
-	GLint *uniforms = programs[PROGRAM_LIGHTING].uniforms;
-
-	vec3 light(0.f, 0.f, 1.f);	// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
-
-	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
-
 	float time = glfwGetTime();
+
+	// Render wireframes
+	glUseProgram(programs[PROGRAM_BASIC].id);
+	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
+
 	for (Model *model: models) {
 		model->object->bind();
 		for (Model::Data &data: model->data) {
+			if (data.type != Model::Data::Wireframe)
+				continue;
 			// Calculate model matrix based on animation data
 			Model::Data::Animation &ani = data.animation;
 			GLfloat angle = time * ani.speed * PI * 2;
@@ -226,6 +224,83 @@ void sceneD()
 			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
+			model->object->renderWireframe();
+		}
+	}
+
+	// Render solid objects
+	glUseProgram(programs[PROGRAM_LIGHTING].id);
+	uniforms = programs[PROGRAM_LIGHTING].uniforms;
+
+	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
+	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+
+	for (Model *model: models) {
+		model->object->bind();
+		for (Model::Data &data: model->data) {
+			if (data.type != Model::Data::Solid)
+				continue;
+			// Calculate model matrix based on animation data
+			Model::Data::Animation &ani = data.animation;
+			GLfloat angle = time * ani.speed * PI * 2;
+			matrix.model = mat4();
+			matrix.model = translate(matrix.model, ani.centre);
+			matrix.model = rotate(matrix.model, angle, ani.normal);
+			matrix.model = translate(matrix.model, ani.initpos);
+			matrix.model = scale(matrix.model, data.scale);
+
+			matrix.update();
+			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
+			model->object->renderSolid();
+		}
+	}
+
+	// Render textured objects
+	glUseProgram(programs[PROGRAM_TEXTURE].id);
+	uniforms = programs[PROGRAM_TEXTURE].uniforms;
+
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
+	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+
+	for (Model *model: models) {
+		model->object->bind();
+		for (Model::Data &data: model->data) {
+			if (data.type != Model::Data::Textured)
+				continue;
+			// Calculate model matrix based on animation data
+			Model::Data::Animation &ani = data.animation;
+			GLfloat angle = time * ani.speed * PI * 2;
+			matrix.model = mat4();
+			matrix.model = translate(matrix.model, ani.centre);
+			matrix.model = rotate(matrix.model, angle, ani.normal);
+			matrix.model = translate(matrix.model, ani.initpos);
+			matrix.model = scale(matrix.model, data.scale);
+
+			matrix.update();
+			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+			glBindTexture(GL_TEXTURE_2D, textures[data.texture].texture);
 			model->object->renderSolid();
 		}
 	}
@@ -256,8 +331,7 @@ void sceneE()
 	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 	texture_t *tex = &textures[TEXTURE_SPHERE];
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tex->pbo);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex->x, tex->y, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glBindTexture(GL_TEXTURE_2D, tex->texture);
 
 	sphere->bind();
 	sphere->renderSolid();
@@ -297,7 +371,13 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		exit(0);
 		return;
 	case GLFW_KEY_M:
-		status.mode = status.mode == Status::WorldMode ? Status::CameraMode : Status::WorldMode;
+		if (status.mode == Status::WorldMode) {
+			status.mode = Status::CameraMode;
+			glfwSetWindowTitle(window, "Changed to camera mode");
+		} else {
+			status.mode = Status::WorldMode;
+			glfwSetWindowTitle(window, "Changed to world mode");
+		}
 		return;
 	case GLFW_KEY_A ... (GLFW_KEY_A + SCENE_NUM - 1):
 		status.scene = key - GLFW_KEY_A;
@@ -436,8 +516,10 @@ GLuint setupTextures()
 {
 	const static char *files[TEXTURE_COUNT] = {
 		[TEXTURE_SPHERE] = "earth.jpg",
+		[TEXTURE_S2] = "firemap.png",
 	};
 
+	glActiveTexture(GL_TEXTURE0);
 	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
 		texture_t *tex = &textures[i];
 		unsigned char *data = stbi_load(files[i], &tex->x, &tex->y, &tex->n, 3);
@@ -450,18 +532,14 @@ GLuint setupTextures()
 			stbi_image_free(data);
 			return 2;
 		}
-		glGenBuffers(1, &tex->pbo);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tex->pbo);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, tex->x * tex->y * tex->n, data, GL_STATIC_DRAW);
+		glGenTextures(1, &tex->texture);
+		glBindTexture(GL_TEXTURE_2D, tex->texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex->x, tex->y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
 
-	GLuint texture;
-	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	return 0;
 }
 
@@ -474,7 +552,7 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	GLFWwindow *window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
+	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window) {
 		glfwTerminate();
 		return -2;
@@ -503,7 +581,7 @@ int main(int /*argc*/, char */*argv*/[])
 
 	setupVertices();
 	status.scene = 0;
-	status.mode = Status::CameraMode;
+	status.mode = Status::WorldMode;
 	camera.position = vec3(0.f, 0.f, 2.f);
 	camera.rotation = quat();
 

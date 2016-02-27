@@ -9,7 +9,7 @@ public:
 	Sphere(GLuint steps = 12) : steps(steps) {}
 	void setup();
 	void renderSolid();
-	void renderFrame();
+	void renderWireframe();
 	void renderPoints();
 	void renderNormal();
 

@@ -40,6 +40,7 @@ enum {
 // Textures
 enum {
 	TEXTURE_SPHERE,
+	TEXTURE_S2,
 	TEXTURE_COUNT
 };
 
@@ -51,7 +52,7 @@ struct program_t {
 extern program_t programs[PROGRAM_COUNT];
 
 struct texture_t {
-	GLuint pbo;
+	GLuint texture;
 	int x, y, n;
 };
 extern texture_t textures[TEXTURE_COUNT];

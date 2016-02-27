@@ -24,7 +24,7 @@ void Sphere::renderSolid()
 	glDrawElements(GL_TRIANGLE_STRIP, offset.count.solid, GL_UNSIGNED_INT, (void *)(offset.index.solid * sizeof(GLint)));
 }
 
-void Sphere::renderFrame()
+void Sphere::renderWireframe()
 {
 	glDrawElements(GL_LINES, offset.count.frame, GL_UNSIGNED_INT, (void *)(offset.index.frame * sizeof(GLint)));
 }

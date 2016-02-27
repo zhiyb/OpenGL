@@ -8,7 +8,7 @@ public:
 	virtual void setup();
 	virtual void bind();
 	virtual void renderSolid() {}
-	virtual void renderFrame() {}
+	virtual void renderWireframe() {}
 	virtual void renderPoints() {}
 	virtual void renderNormal() {}
 

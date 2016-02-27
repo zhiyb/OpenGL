@@ -8,7 +8,7 @@ class Cube : public Object
 public:
 	Cube();
 	void setup();
-	void renderFrame();
+	void renderWireframe();
 	void renderSolid();
 
 private:

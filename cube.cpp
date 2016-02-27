@@ -19,7 +19,7 @@ void Cube::setup()
 	Object::setup();
 }
 
-void Cube::renderFrame()
+void Cube::renderWireframe()
 {
 	glDrawArrays(GL_LINES, 0, 6 * 4);
 }
