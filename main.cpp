@@ -48,7 +48,7 @@ static struct {
 
 	void update()
 	{
-		model = mat4(world.rotation) * model;
+		model = mat4_cast(world.rotation) * model;
 		mvp = projection * view * model;
 		normal = mat3(transpose(inverse(view * model)));
 	}
@@ -71,7 +71,9 @@ static Sphere *sphere;
 struct Model {
 	struct Data {
 		union {
-			vec4 colour;
+			struct {
+				GLfloat colour[4];
+			};
 			GLuint texture;
 		};
 		vec3 scale;
@@ -104,9 +106,9 @@ void setupVertices()
 		// colour, scale, {centre, normal, initpos, speed,},
 		{{.texture = TEXTURE_S2}, vec3(0.25f), Model::Data::Textured,
 		 {vec3(0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.8f, 0.f), 0.25f,},},
-		{vec4(0.f, 1.f, 0.f, 1.f), vec3(0.125f), Model::Data::Wireframe,
+		{{0.f, 1.f, 0.f, 1.f}, vec3(0.125f), Model::Data::Wireframe,
 		 {vec3(0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 0.8f), 0.5f,},},
-		{vec4(0.f, 0.f, 1.f, 1.f), vec3(0.0625f), Model::Data::Solid,
+		{{0.f, 0.f, 1.f, 1.f}, vec3(0.0625f), Model::Data::Solid,
 		 {vec3(0.f), vec3(0.f, 0.f, 1.f), vec3(0.8f, 0.f, 0.f), 1.f,},},
 	};
 
@@ -120,7 +122,7 @@ void setupVertices()
 		// colour, scale, {centre, normal, initpos, speed,},
 		{{.texture = TEXTURE_CUBE}, vec3(0.2f), Model::Data::Textured,
 		 {vec3(0.5f, 0.f, 0.f), vec3(1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), 0.3f,},},
-		{vec4(1.f, 1.f, 0.f, 1.f), vec3(0.1f), Model::Data::Solid,
+		{{1.f, 1.f, 0.f, 1.f}, vec3(0.1f), Model::Data::Solid,
 		 {vec3(-0.5f, 0.f, 0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.5f, 0.f), 0.2f,},},
 	};
 
