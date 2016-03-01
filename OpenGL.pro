@@ -41,4 +41,5 @@ HEADERS += \
     global.h \
     object.h \
     cube.h \
-    cone.h
+    cone.h \
+    stb_image.h
