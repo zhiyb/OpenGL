@@ -41,6 +41,7 @@ enum {
 enum {
 	TEXTURE_SPHERE,
 	TEXTURE_S2,
+	TEXTURE_CUBE,
 	TEXTURE_COUNT
 };
 

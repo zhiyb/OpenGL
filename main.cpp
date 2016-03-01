@@ -118,7 +118,7 @@ void setupVertices()
 
 	static const Model::Data cubeModels[] = {
 		// colour, scale, {centre, normal, initpos, speed,},
-		{vec4(0.2f, 0.4f, 1.f, 1.f), vec3(0.2f), Model::Data::Solid,
+		{{.texture = TEXTURE_CUBE}, vec3(0.2f), Model::Data::Textured,
 		 {vec3(0.5f, 0.f, 0.f), vec3(1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), 0.3f,},},
 		{vec4(1.f, 1.f, 0.f, 1.f), vec3(0.1f), Model::Data::Solid,
 		 {vec3(-0.5f, 0.f, 0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.5f, 0.f), 0.2f,},},
@@ -517,6 +517,7 @@ GLuint setupTextures()
 	const static char *files[TEXTURE_COUNT] = {
 		[TEXTURE_SPHERE] = "earth.jpg",
 		[TEXTURE_S2] = "firemap.png",
+		[TEXTURE_CUBE] = "diamond_block.png",
 	};
 
 	glActiveTexture(GL_TEXTURE0);
