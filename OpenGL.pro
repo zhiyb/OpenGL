@@ -24,8 +24,7 @@ SOURCES += \
     helper.cpp \
     sphere.cpp \
     object.cpp \
-    cube.cpp \
-    cone.cpp
+    cube.cpp
 
 DISTFILES += \
     basic.vert \
@@ -41,5 +40,4 @@ HEADERS += \
     global.h \
     object.h \
     cube.h \
-    cone.h \
     stb_image.h

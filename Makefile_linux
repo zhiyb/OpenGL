@@ -1,4 +1,4 @@
-SRC	= cone.cpp cube.cpp helper.cpp main.cpp object.cpp sphere.cpp
+SRC	= cube.cpp helper.cpp main.cpp object.cpp sphere.cpp
 TRG	= OpenGL
 
 OBJ	= $(SRC:.cpp=.o)
