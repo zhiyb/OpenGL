@@ -12,6 +12,7 @@ public:
 	void renderWireframe();
 	void renderPoints();
 	void renderNormal();
+	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
 
 private:
 	void addVertex(const glm::vec3 &vertex);

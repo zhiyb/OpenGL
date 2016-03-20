@@ -39,6 +39,21 @@ void Sphere::renderNormal()
 	glDrawElements(GL_LINES, offset.count.normalView, GL_UNSIGNED_INT, (void *)(offset.index.normalView * sizeof(GLuint)));
 }
 
+btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform T)
+{
+	btCollisionShape* fallshape = new btSphereShape(scale);
+	btDefaultMotionState* fallMotionState = new btDefaultMotionState(T);
+	btVector3 fallInertia(0,0,0);
+	fallshape->calculateLocalInertia(mass,fallInertia);
+	btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass, fallMotionState, fallshape, fallInertia);
+	btRigidBody* fallRigidBody = new btRigidBody(fallRigidBodyCI);
+	//fallRigidBody->setLinearVelocity(btVector3(-10, 20, 0));
+	//fallRigidBody->setRestitution(COE);
+	//dynamicsWorld->addRigidBody(fallRigidBody);
+	//fallRigidBody->getCollisionShape()->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
+	return fallRigidBody;
+}
+
 void Sphere::addVertex(const vec3 &vertex)
 {
 	vertices.push_back(vertex);

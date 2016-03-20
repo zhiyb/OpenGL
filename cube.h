@@ -10,6 +10,7 @@ public:
 	void setup();
 	void renderWireframe();
 	void renderSolid();
+	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
 
 private:
 	void setupVertices();

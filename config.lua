@@ -8,3 +8,4 @@
  GLew = true
  IMAGE = 'stb-image'
  STD = 'c++11'
+ BULLET = true

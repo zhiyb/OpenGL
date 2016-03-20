@@ -12,6 +12,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <btBulletDynamicsCommon.h>
+#include "world.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -22,6 +25,7 @@
 
 #define SCENE_NUM	5
 #define SCENE_SCALE	0.7f
+#define CAMERA_POSITION	3.f
 #define CAMERA_MOVEMENT	0.05f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define WORLD_ROTATE	(2.f * PI / 180.f)
@@ -62,54 +66,126 @@ static struct Camera {
 } camera;
 
 static struct Status {
-	int scene;
+	bool run;
 	enum {WorldMode = 0, CameraMode} mode;
 } status;
 
-static Sphere *sphere;
+static struct Arena {
+	Object *object;
+	float scale;
+	vec4 colour;
+} arena;
 
 struct Model {
 	struct Data {
+		enum {Wireframe, Solid, Textured} type;
 		union {
 			struct {
 				GLfloat colour[4];
 			};
 			GLuint texture;
 		};
-		vec3 scale;
-		enum {Wireframe, Solid, Textured} type;
-		struct Animation {
-			vec3 centre, normal;
-			vec3 initpos;	// Relative to centre
-			GLfloat speed;
-		} animation;
+		btScalar scale;
+	};
+	struct Init {
+		struct Data modelData;
+		btScalar restitution;
+		btScalar mass;
+		btVector3 position;
+		btVector3 velocity;
 	};
 	vector<Data> data;
+	vector<btRigidBody *> bodies;
 	Object *object;
 };
 vector<Model *> models;
 
-void setupModelData(Model *model, const Model::Data *data, int size)
+// Bullet physics
+btBroadphaseInterface* broadphase;
+btDefaultCollisionConfiguration* collisionConfiguration;
+btCollisionDispatcher* dispatcher;
+btSequentialImpulseConstraintSolver* solver;
+btDiscreteDynamicsWorld* dynamicsWorld;
+
+void bulletInit()
 {
-	while (size--)
-		model->data.push_back(*data++);
+	/*
+	 * set up world
+	 */
+	broadphase = new btDbvtBroadphase();
+	collisionConfiguration = new btDefaultCollisionConfiguration();
+	dispatcher = new btCollisionDispatcher(collisionConfiguration);
+	solver = new btSequentialImpulseConstraintSolver;
+	dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
+	dynamicsWorld->setGravity(btVector3(0., GRAVITY, 0));
+
+	/*
+	 * Set up arena
+	 */
+	arena.object = new Cube;
+	arena.object->setup();
+	arena.scale = 1.5f;
+	arena.colour = vec4(0.2f, 0.4f, 1.f, 1.f);
+
+	btVector3 normals[] = {
+		btVector3(0.f, 0.f, 1.f),
+		btVector3(0.f, 1.f, 0.f),
+		btVector3(1.f, 0.f, 0.f),
+		btVector3(0.f, 0.f, -1.f),
+		btVector3(0.f, -1.f, 0.f),
+		btVector3(-1.f, 0.f, 0.f),
+	};
+#if 1
+	for (unsigned int i = 0; i != 6; i++) {
+		btCollisionShape* shape = new btStaticPlaneShape(normals[i], 0.f);
+		btDefaultMotionState* motionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1), -arena.scale * normals[i]));
+		btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0,motionState,shape,btVector3(0,0,0));
+		btRigidBody* rigidBody = new btRigidBody(rigidBodyCI);
+		rigidBody->setRestitution(RESTITUTION);
+		rigidBody->setFriction(FRICTION);
+		dynamicsWorld->addRigidBody(rigidBody);
+	}
+#endif
+}
+
+mat4 bulletStep(btRigidBody* rigidBody) {
+	btTransform trans;
+	rigidBody->getMotionState()->getWorldTransform(trans);
+	btScalar mat[16];
+	trans.getOpenGLMatrix(mat);
+	mat4 matrix;
+	memcpy(&matrix, mat, sizeof(matrix));
+	return matrix;
+}
+
+void setupModelData(Model *model, const Model::Init *init, int size)
+{
+	while (size--) {
+		btTransform t = btTransform(btQuaternion(0, 0, 0, 1), init->position);
+		btRigidBody *rigidBody = model->object->createRigidBody(init->mass, init->modelData.scale, t);
+		rigidBody->setRestitution(init->restitution);
+		rigidBody->setFriction(FRICTION);
+		rigidBody->setLinearVelocity(init->velocity);
+		dynamicsWorld->addRigidBody(rigidBody);
+		model->bodies.push_back(rigidBody);
+		model->data.push_back(init->modelData);
+		init++;
+	}
 }
 
 void setupVertices()
 {
-	sphere = new Sphere(32);
-	sphere->setup();
-
 	Model *model;
 
-	static const Model::Data sphereModels[] = {
-		// colour, scale, {centre, normal, initpos, speed,},
-		{{.texture = TEXTURE_S2}, vec3(0.25f), Model::Data::Textured,
-		 {vec3(0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.8f, 0.f), 0.25f,},},
-		{{0.f, 1.f, 0.f, 1.f}, vec3(0.125f), Model::Data::Wireframe,
-		 {vec3(0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 0.8f), 0.5f,},},
-		{{0.f, 0.f, 1.f, 1.f}, vec3(0.0625f), Model::Data::Solid,
-		 {vec3(0.f), vec3(0.f, 0.f, 1.f), vec3(0.8f, 0.f, 0.f), 1.f,},},
+	static const Model::Init sphereModels[] = {
+		// modelData{type, {colour/texture}, scale},
+		// restitution, mass, position, velocity
+		{{Model::Data::Textured, {.texture = TEXTURE_S2}, 0.25f},
+		 RESTITUTION, 0.25f, btVector3(0.f, 0.8f, 0.f), btVector3(0.f, -5.f, 0.f)},
+		{{Model::Data::Wireframe, {0.f, 1.f, 0.f, 1.f}, 0.125f},
+		 RESTITUTION, 0.125f, btVector3(0.f, 0.f, 0.8f), btVector3(0.f, 0.f, -5.f)},
+		{{Model::Data::Solid, {0.f, 0.f, 1.f, 1.f}, 0.0625f},
+		 RESTITUTION, 0.0625f, btVector3(0.8f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
 	};
 
 	model = new Model;
@@ -118,12 +194,13 @@ void setupVertices()
 	setupModelData(model, sphereModels, ARRAY_SIZE(sphereModels));
 	models.push_back(model);
 
-	static const Model::Data cubeModels[] = {
-		// colour, scale, {centre, normal, initpos, speed,},
-		{{.texture = TEXTURE_CUBE}, vec3(0.2f), Model::Data::Textured,
-		 {vec3(0.5f, 0.f, 0.f), vec3(1.f, 1.f, 1.f), vec3(0.f, 0.f, 0.f), 0.3f,},},
-		{{1.f, 1.f, 0.f, 1.f}, vec3(0.1f), Model::Data::Solid,
-		 {vec3(-0.5f, 0.f, 0.f), vec3(1.f, 0.f, 0.f), vec3(0.f, 0.5f, 0.f), 0.2f,},},
+	static const Model::Init cubeModels[] = {
+		// modelData{type, {colour/texture}, scale},
+		// restitution, mass, position, velocity
+		{{Model::Data::Textured, {.texture = TEXTURE_CUBE}, 0.2f},
+		 RESTITUTION, 0.2f, btVector3(0.5f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
+		{{Model::Data::Solid, {1.f, 1.f, 0.f, 1.f}, 0.1f},
+		 RESTITUTION, 0.1f, btVector3(-0.5f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
 	};
 
 	model = new Model;
@@ -133,92 +210,36 @@ void setupVertices()
 	models.push_back(model);
 }
 
-void sceneA()
+void scene()
 {
-	// (A) Draw a wire-frame sphere by calculating all
-	// the vertex positions and drawing lines between them.
+	// Render wireframes
 	glUseProgram(programs[PROGRAM_BASIC].id);
 	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
 
-	glUniform4f(uniforms[UNIFORM_COLOUR], 0.1f, 0.2f, 1.f, 1.f);
-
-	matrix.model = scale(mat4(), vec3(SCENE_SCALE));
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-
-	sphere->bind();
-	sphere->renderWireframe();
-}
-
-void sceneB()
-{
-	// (B) For the sphere, work out the surface normal direction and
-	// augment your wire-frame drawing with short lines representing
-	// the normal direction of each vertex.
-	// The sphere should now appear to be a hedgehog.
-	sceneA();
-	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
-	glUniform4f(uniforms[UNIFORM_COLOUR], 1.f, 0.f, 0.f, 1.f);
-	sphere->renderNormal();
-}
-
-void sceneC()
-{
-	// (C) Use the normal information calculated in (b) above work out
-	// the amount of illumination falling on each vertex.
-	// Assume that the light source is at infinity and is co-axial
-	// with the viewpoint. Use this to draw a shaded sphere.
-	glUseProgram(programs[PROGRAM_LIGHTING].id);
-	GLint *uniforms = programs[PROGRAM_LIGHTING].uniforms;
-
-	vec3 light(0.f, 0.f, 1.f);	// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
-
-	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
-
-	vec4 colour(0.f, 0.f, 1.f, 1.f);
-	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
-
-	matrix.model = scale(mat4(), vec3(0.8));
+#if 1
+	// Render arena
+	matrix.model = scale(mat4(), vec3(arena.scale));
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	sphere->bind();
-	sphere->renderSolid();
-}
-
-void sceneD()
-{
-	// (D) Develop a simple animation showing a number of cones and spheres
-	// moving along regular paths. These can be wireframe or solid.
-	float time = glfwGetTime();
-
-	// Render wireframes
-	glUseProgram(programs[PROGRAM_BASIC].id);
-	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
+	vec4 colour(0.f, 0.f, 0.f, 1.f);
+	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
+	arena.object->bind();
+	arena.object->renderWireframe();
+#endif
 
 	for (Model *model: models) {
 		model->object->bind();
-		for (Model::Data &data: model->data) {
+		for (unsigned int i = 0; i != model->data.size(); i++) {
+			Model::Data &data = model->data[i];
+
 			if (data.type != Model::Data::Wireframe)
 				continue;
-			// Calculate model matrix based on animation data
-			Model::Data::Animation &ani = data.animation;
-			GLfloat angle = time * ani.speed * PI * 2;
-			matrix.model = mat4();
-			matrix.model = translate(matrix.model, ani.centre);
-			matrix.model = rotate(matrix.model, angle, ani.normal);
-			matrix.model = translate(matrix.model, ani.initpos);
-			matrix.model = scale(matrix.model, data.scale);
+			// Step model physics
+			matrix.model = bulletStep(model->bodies[i]);
+			matrix.model = scale(matrix.model, vec3(data.scale));
 
 			matrix.update();
 			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -243,22 +264,33 @@ void sceneD()
 	// Material properties
 	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
 	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.5f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 10.f);
+
+#if 1
+	// Render arena
+	matrix.model = scale(mat4(), vec3(-arena.scale));
+	matrix.update();
+	matrix.normal = mat3(scale(mat4(matrix.normal), vec3(-1.f)));
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&arena.colour);
+	arena.object->bind();
+	arena.object->renderSolid();
+#endif
 
 	for (Model *model: models) {
 		model->object->bind();
-		for (Model::Data &data: model->data) {
+		for (unsigned int i = 0; i != model->data.size(); i++) {
+			Model::Data &data = model->data[i];
+
 			if (data.type != Model::Data::Solid)
 				continue;
-			// Calculate model matrix based on animation data
-			Model::Data::Animation &ani = data.animation;
-			GLfloat angle = time * ani.speed * PI * 2;
-			matrix.model = mat4();
-			matrix.model = translate(matrix.model, ani.centre);
-			matrix.model = rotate(matrix.model, angle, ani.normal);
-			matrix.model = translate(matrix.model, ani.initpos);
-			matrix.model = scale(matrix.model, data.scale);
+			// Step model physics
+			matrix.model = bulletStep(model->bodies[i]);
+			matrix.model = scale(matrix.model, vec3(data.scale));
 
 			matrix.update();
 			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -280,22 +312,33 @@ void sceneD()
 	// Material properties
 	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
 	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
+	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.5f);
+	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 10.f);
+
+#if 0
+	// Render arena
+	matrix.model = scale(mat4(), vec3(-arena.scale));
+	matrix.update();
+	matrix.normal = mat3(scale(mat4(matrix.normal), vec3(-1.f)));
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CUBE].texture);
+	arena.object->bind();
+	arena.object->renderSolid();
+#endif
 
 	for (Model *model: models) {
 		model->object->bind();
-		for (Model::Data &data: model->data) {
+		for (unsigned int i = 0; i != model->data.size(); i++) {
+			Model::Data &data = model->data[i];
+
 			if (data.type != Model::Data::Textured)
 				continue;
-			// Calculate model matrix based on animation data
-			Model::Data::Animation &ani = data.animation;
-			GLfloat angle = time * ani.speed * PI * 2;
-			matrix.model = mat4();
-			matrix.model = translate(matrix.model, ani.centre);
-			matrix.model = rotate(matrix.model, angle, ani.normal);
-			matrix.model = translate(matrix.model, ani.initpos);
-			matrix.model = scale(matrix.model, data.scale);
+			// Step model physics
+			matrix.model = bulletStep(model->bodies[i]);
+			matrix.model = scale(matrix.model, vec3(data.scale));
 
 			matrix.update();
 			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -308,37 +351,6 @@ void sceneD()
 	}
 }
 
-void sceneE()
-{
-	// (E) Draw a textured object, such as a rectangle (plane), box or sphere.
-	glUseProgram(programs[PROGRAM_TEXTURE].id);
-	GLint *uniforms = programs[PROGRAM_TEXTURE].uniforms;
-
-	vec3 light(1.f, 0.f, 1.f);	// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(normalize(light), 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
-
-	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 13.f);
-
-	matrix.model = scale(mat4(), vec3(0.8));
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	texture_t *tex = &textures[TEXTURE_SPHERE];
-	glBindTexture(GL_TEXTURE_2D, tex->texture);
-
-	sphere->bind();
-	sphere->renderSolid();
-}
-
 static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -347,8 +359,7 @@ static void render()
 	matrix.view = lookAt(camera.position, camera.position + camera.direction(), camera.upward());
 	//matrix.view = matrix.view * mat4(matrix.world.rotation);
 
-	void (*scenes[])() = {sceneA, sceneB, sceneC, sceneD, sceneE};
-	(*scenes[status.scene])();
+	scene();
 }
 
 static void refreshCB(GLFWwindow *window)
@@ -381,11 +392,8 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 			glfwSetWindowTitle(window, "Changed to world mode");
 		}
 		return;
-	case GLFW_KEY_A ... (GLFW_KEY_A + SCENE_NUM - 1):
-		status.scene = key - GLFW_KEY_A;
-		return;
 	case GLFW_KEY_SPACE:
-		status.scene = (status.scene + 1) % SCENE_NUM;
+		status.run = !status.run;
 		return;
 	}
 
@@ -424,7 +432,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		camera.position -= camera.direction() * CAMERA_MOVEMENT;
 		break;
 	case GLFW_KEY_R:
-		camera.position = vec3(0.f, 0.f, 2.f);
+		camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
 		camera.rotation = quat();
 	}
 	return;
@@ -582,10 +590,12 @@ int main(int /*argc*/, char */*argv*/[])
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	bulletInit();
+
 	setupVertices();
-	status.scene = 0;
+	status.run = false;
 	status.mode = Status::WorldMode;
-	camera.position = vec3(0.f, 0.f, 2.f);
+	camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
 	camera.rotation = quat();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
@@ -596,7 +606,11 @@ int main(int /*argc*/, char */*argv*/[])
 	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
 		render();
+
 		glfwSwapBuffers(window);
+
+		if (status.run)
+			dynamicsWorld->stepSimulation(1.f/60.f, 10);
 
 		// FPS counter
 		count++;

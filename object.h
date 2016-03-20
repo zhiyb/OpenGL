@@ -1,6 +1,8 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <btBulletDynamicsCommon.h>
+
 class Object
 {
 public:
@@ -11,6 +13,7 @@ public:
 	virtual void renderWireframe() {}
 	virtual void renderPoints() {}
 	virtual void renderNormal() {}
+	virtual btRigidBody *createRigidBody(btScalar /*mass*/, btScalar /*scale*/, btTransform /*T*/) {return 0;}
 
 protected:
 	GLuint vao;
