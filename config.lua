@@ -1,4 +1,4 @@
---
+ --
  -- Coursework configuration
  --
  -- Name:

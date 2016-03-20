@@ -74,6 +74,7 @@ static struct Arena {
 	Object *object;
 	float scale;
 	vec4 colour;
+	vector<btRigidBody *> bodies;
 } arena;
 
 struct Model {
@@ -107,6 +108,8 @@ btCollisionDispatcher* dispatcher;
 btSequentialImpulseConstraintSolver* solver;
 btDiscreteDynamicsWorld* dynamicsWorld;
 
+void quit();
+
 void bulletInit()
 {
 	/*
@@ -135,7 +138,6 @@ void bulletInit()
 		btVector3(0.f, -1.f, 0.f),
 		btVector3(-1.f, 0.f, 0.f),
 	};
-#if 1
 	for (unsigned int i = 0; i != 6; i++) {
 		btCollisionShape* shape = new btStaticPlaneShape(normals[i], 0.f);
 		btDefaultMotionState* motionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1), -arena.scale * normals[i]));
@@ -144,8 +146,8 @@ void bulletInit()
 		rigidBody->setRestitution(RESTITUTION);
 		rigidBody->setFriction(FRICTION);
 		dynamicsWorld->addRigidBody(rigidBody);
+		arena.bodies.push_back(rigidBody);
 	}
-#endif
 }
 
 mat4 bulletStep(btRigidBody* rigidBody) {
@@ -181,11 +183,11 @@ void setupVertices()
 		// modelData{type, {colour/texture}, scale},
 		// restitution, mass, position, velocity
 		{{Model::Data::Textured, {.texture = TEXTURE_S2}, 0.25f},
-		 RESTITUTION, 0.25f, btVector3(0.f, 0.8f, 0.f), btVector3(0.f, -5.f, 0.f)},
+		 RESTITUTION, 0.25f, btVector3(0.f, 0.8f, 0.f), btVector3(0.f, 5.f, 0.f)},
 		{{Model::Data::Wireframe, {0.f, 1.f, 0.f, 1.f}, 0.125f},
-		 RESTITUTION, 0.125f, btVector3(0.f, 0.f, 0.8f), btVector3(0.f, 0.f, -5.f)},
+		 RESTITUTION, 0.125f, btVector3(0.f, 0.f, 0.8f), btVector3(0.f, 0.f, 5.f)},
 		{{Model::Data::Solid, {0.f, 0.f, 1.f, 1.f}, 0.0625f},
-		 RESTITUTION, 0.0625f, btVector3(0.8f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
+		 RESTITUTION, 0.0625f, btVector3(0.8f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
 	};
 
 	model = new Model;
@@ -198,9 +200,9 @@ void setupVertices()
 		// modelData{type, {colour/texture}, scale},
 		// restitution, mass, position, velocity
 		{{Model::Data::Textured, {.texture = TEXTURE_CUBE}, 0.2f},
-		 RESTITUTION, 0.2f, btVector3(0.5f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
+		 RESTITUTION, 0.2f, btVector3(0.5f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
 		{{Model::Data::Solid, {1.f, 1.f, 0.f, 1.f}, 0.1f},
-		 RESTITUTION, 0.1f, btVector3(-0.5f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
+		 RESTITUTION, 0.1f, btVector3(-0.5f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
 	};
 
 	model = new Model;
@@ -217,7 +219,7 @@ void scene()
 	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
 
 #if 1
-	// Render arena
+	// Render arena frame
 	matrix.model = scale(mat4(), vec3(arena.scale));
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -316,7 +318,7 @@ void scene()
 	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 10.f);
 
 #if 0
-	// Render arena
+	// Render textured arena
 	matrix.model = scale(mat4(), vec3(-arena.scale));
 	matrix.update();
 	matrix.normal = mat3(scale(mat4(matrix.normal), vec3(-1.f)));
@@ -357,7 +359,6 @@ static void render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	matrix.view = lookAt(camera.position, camera.position + camera.direction(), camera.upward());
-	//matrix.view = matrix.view * mat4(matrix.world.rotation);
 
 	scene();
 }
@@ -380,8 +381,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 	case GLFW_KEY_Q:
-		glfwTerminate();
-		exit(0);
+		quit();
 		return;
 	case GLFW_KEY_M:
 		if (status.mode == Status::WorldMode) {
@@ -554,6 +554,30 @@ GLuint setupTextures()
 	return 0;
 }
 
+void quit()
+{
+	glfwTerminate();
+
+	// Free memory
+	for (Model *model: models) {
+		for (btRigidBody *body: model->bodies) {
+			dynamicsWorld->removeRigidBody(body);
+			delete body;
+		}
+		delete model->object;
+	}
+	for (btRigidBody *body: arena.bodies) {
+		dynamicsWorld->removeRigidBody(body);
+		delete body;
+	}
+	delete dynamicsWorld;
+	delete solver;
+	delete dispatcher;
+	delete collisionConfiguration;
+	delete broadphase;
+	exit(0);
+}
+
 int main(int /*argc*/, char */*argv*/[])
 {
 	if (!glfwInit())
@@ -593,7 +617,7 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 
 	setupVertices();
-	status.run = false;
+	status.run = true;
 	status.mode = Status::WorldMode;
 	camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
 	camera.rotation = quat();
@@ -626,8 +650,6 @@ int main(int /*argc*/, char */*argv*/[])
 
 		glfwPollEvents();
 	}
-
-	glfwTerminate();
-	// TODO: Free the models?
+	quit();
 	return 0;
 }

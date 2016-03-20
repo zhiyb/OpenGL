@@ -8,10 +8,6 @@
 
 using namespace glm;
 
-Object::Object()
-{
-}
-
 void Object::setup()
 {
 	glGenVertexArrays(1, &vao);

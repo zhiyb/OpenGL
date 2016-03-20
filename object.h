@@ -6,7 +6,8 @@
 class Object
 {
 public:
-	Object();
+	Object() {}
+	virtual ~Object() {}
 	virtual void setup();
 	virtual void bind();
 	virtual void renderSolid() {}
