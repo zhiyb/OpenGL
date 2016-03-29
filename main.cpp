@@ -23,8 +23,8 @@
 #include "sphere.h"
 #include "cube.h"
 
-#define SCENE_NUM	5
-#define SCENE_SCALE	0.7f
+//#define LOG
+
 #define CAMERA_POSITION	3.f
 #define CAMERA_MOVEMENT	0.05f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
@@ -68,6 +68,9 @@ static struct Camera {
 static struct Status {
 	bool run;
 	enum {WorldMode = 0, CameraMode} mode;
+#ifdef LOG
+	FILE *flog;
+#endif
 } status;
 
 static struct Arena {
@@ -153,10 +156,8 @@ void bulletInit()
 mat4 bulletStep(btRigidBody* rigidBody) {
 	btTransform trans;
 	rigidBody->getMotionState()->getWorldTransform(trans);
-	btScalar mat[16];
-	trans.getOpenGLMatrix(mat);
 	mat4 matrix;
-	memcpy(&matrix, mat, sizeof(matrix));
+	trans.getOpenGLMatrix((btScalar *)&matrix);
 	return matrix;
 }
 
@@ -575,22 +576,40 @@ void quit()
 	delete dispatcher;
 	delete collisionConfiguration;
 	delete broadphase;
+#ifdef LOG
+	fflush(status.flog);
+	fclose(status.flog);
+#endif
 	exit(0);
 }
 
 int main(int /*argc*/, char */*argv*/[])
 {
-	if (!glfwInit())
+	if (!glfwInit()) {
+		cerr << "glfwInit failed" << endl;
 		return -1;
+	}
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#ifdef LOG
+	if (!(status.flog = fopen("velocity.log", "w"))) {
+		cerr << "Cannot open log file" << endl;
+		glfwTerminate();
+		return -1;
+	}
+#endif
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window) {
+		cerr << "Cannot create glfw Window" << endl;
+#ifdef LOG
+		fclose(status.flog);
+#endif
 		glfwTerminate();
-		return -2;
+		return -1;
 	}
 
 	glfwMakeContextCurrent(window);
@@ -599,13 +618,19 @@ int main(int /*argc*/, char */*argv*/[])
 	glewInit();
 
 	if (setupPrograms()) {
+#ifdef LOG
+		fclose(status.flog);
+#endif
 		glfwTerminate();
-		return -3;
+		return -1;
 	}
 
 	if (setupTextures()) {
+#ifdef LOG
+		fclose(status.flog);
+#endif
 		glfwTerminate();
-		return -4;
+		return -1;
 	}
 
 	glEnable(GL_DEPTH_TEST);
@@ -627,14 +652,30 @@ int main(int /*argc*/, char */*argv*/[])
 	refreshCB(window);
 
 	float past = glfwGetTime();
+	double animation = glfwGetTime();
 	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
 		render();
 
-		glfwSwapBuffers(window);
+		// Step simulation
+		if (status.run) {
+			double time = glfwGetTime();
+			dynamicsWorld->stepSimulation(time - animation, 100);
+			animation = time;
 
-		if (status.run)
-			dynamicsWorld->stepSimulation(1.f/60.f, 10);
+#ifdef LOG
+			// Write output log
+			for (Model *model: models) {
+				for (btRigidBody *body: model->bodies) {
+					btTransform t;
+					body->getMotionState()->getWorldTransform(t);
+					btVector3 v = t.getOrigin();
+					fprintf(status.flog, "%g %g %g ", v.x(), v.y(), v.z());
+				}
+			}
+			fputc('\n', status.flog);
+#endif
+		}
 
 		// FPS counter
 		count++;
@@ -648,6 +689,7 @@ int main(int /*argc*/, char */*argv*/[])
 			past = now;
 		}
 
+		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	quit();
