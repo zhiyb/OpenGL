@@ -16,7 +16,7 @@ void Sphere::setup()
 	setupVertices();
 	setupSolidIndices();
 	setupFrameIndices();
-	Object::setup();
+	setupVAO();
 }
 
 void Sphere::renderSolid()

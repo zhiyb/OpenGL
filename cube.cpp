@@ -8,15 +8,10 @@
 
 using namespace glm;
 
-Cube::Cube()
-{
-
-}
-
 void Cube::setup()
 {
 	setupVertices();
-	Object::setup();
+	setupVAO();
 }
 
 void Cube::renderWireframe()

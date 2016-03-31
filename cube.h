@@ -6,11 +6,13 @@
 class Cube : public Object
 {
 public:
-	Cube();
-	void setup();
+	Cube() {setup();}
 	void renderWireframe();
 	void renderSolid();
 	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
+
+protected:
+	void setup();
 
 private:
 	void setupVertices();

@@ -1,9 +1,9 @@
 #version 400
 
 out vec4 FragColor;
-uniform float ambient, diffuse, specular, shininess;
+uniform float shininess;
+uniform vec3 ambient, diffuse, specular;
 uniform vec3 light;
-uniform vec4 colour;
 
 in VERTEX {
 	vec3 normal;
@@ -14,17 +14,16 @@ void main(void)
 {
 	vec3 normal = vertex.normal;
 
-	vec3 colourA = vec3(0.f, 0.f, 0.f);
-	colourA += ambient * colour.rgb;
+	vec3 colour = ambient;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	colourA += diffuse * cos_theta * colour.rgb;
+	colour += diffuse * cos_theta;
 
 	if (cos_theta != 0.0) {
 		vec3 ref = 2.0 * dot(light, normal) * normal - light;
 		//vec3 ref = reflect(-light, normal);
-		colourA += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess), 1.0);
+		colour += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess / 10.0), 1.0);
 	}
 
-	FragColor = vec4(min(colourA, vec3(1.0)), colour.a);
+	FragColor = vec4(min(colour, vec3(1.0)), 1.0);
 }

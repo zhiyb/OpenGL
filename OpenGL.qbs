@@ -28,24 +28,84 @@ CppApplication {
     files: [
         "main.cpp",
         "helper.cpp",
-        "sphere.cpp",
-        "object.cpp",
-        "cube.cpp",
-        "basic.vert",
-        "basic.frag",
-        "lighting.vert",
-        "lighting.frag",
-        "texture.vert",
-        "texture.frag",
-        "config.lua",
         "helper.h",
-        "sphere.h",
         "global.h",
-        "object.h",
-        "cube.h",
-        "stb_image.h",
         "world.h",
     ]
+
+    Group {
+        name: "Single header libraries"
+        files: [
+            "stb_image.h",
+            "tiny_obj_loader.h",
+        ]
+    }
+
+    Group {
+        name: "Object source files"
+        files: [
+            "sphere.cpp",
+            "object.cpp",
+            "cube.cpp",
+            "sphere.h",
+            "object.h",
+            "cube.h",
+            "wavefront.cpp",
+            "wavefront.h",
+        ]
+    }
+
+    Group {
+        name: "Vertex shaders"
+        files: [
+            "basic.vert",
+            "lighting.vert",
+            "texture.vert",
+            "wavefront.vert",
+        ]
+    }
+
+    Group {
+        name: "Fragment shaders"
+        files: [
+            "basic.frag",
+            "lighting.frag",
+            "texture.frag",
+            "wavefront.frag",
+        ]
+    }
+
+    Group {
+        name: "Textures"
+        files: [
+            "diamond_block.png",
+            "earth.jpg",
+            "firemap.png",
+        ]
+    }
+
+    Group {
+        name: "Models: simple"
+        files: [
+            "models/simple.mtl",
+            "models/simple.obj",
+        ]
+    }
+
+    Group {
+        name: "Models: nanoMiku"
+        files: [
+            "models/nanoMiku.mtl",
+            "models/nanoMiku.obj",
+        ]
+    }
+
+    Group {
+        name: "Miscellaneous files"
+        files: [
+            "config.lua",
+        ]
+    }
 
     Group {     // Properties for the produced executable
         fileTagsFilter: product.type

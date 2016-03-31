@@ -6,13 +6,15 @@
 class Sphere : public Object
 {
 public:
-	Sphere(GLuint steps = 12) : steps(steps) {}
-	void setup();
+	Sphere(GLuint steps = 12) : steps(steps) {setup();}
 	void renderSolid();
 	void renderWireframe();
 	void renderPoints();
 	void renderNormal();
 	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
+
+protected:
+	void setup();
 
 private:
 	void addVertex(const glm::vec3 &vertex);

@@ -8,7 +8,7 @@
 
 using namespace glm;
 
-void Object::setup()
+void Object::setupVAO()
 {
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);

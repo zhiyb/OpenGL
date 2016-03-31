@@ -1,7 +1,7 @@
 #version 400
 
 out vec4 FragColor;
-uniform float ambient, diffuse, specular, specularPower;
+uniform float ambient, diffuse, specular, shininess;
 uniform vec3 light;
 uniform vec4 colour;
 uniform sampler2D sampler;
@@ -26,7 +26,7 @@ void main(void)
 	if (cos_theta != 0.0) {
 		//vec3 reflect = 2.0 * dot(light, normal) * normal - light;
 		vec3 ref = reflect(-light, normal);
-		colourA += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), specularPower), 1.0);
+		colourA += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess), 1.0);
 	}
 
 	FragColor = vec4(min(colourA, vec3(1.0)), colour.a);

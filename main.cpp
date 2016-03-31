@@ -22,8 +22,10 @@
 #include "helper.h"
 #include "sphere.h"
 #include "cube.h"
+#include "wavefront.h"
 
-//#define LOG
+//#define BULLET
+//#define MODELS
 
 #define CAMERA_POSITION	3.f
 #define CAMERA_MOVEMENT	0.05f
@@ -68,18 +70,18 @@ static struct Camera {
 static struct Status {
 	bool run;
 	enum {WorldMode = 0, CameraMode} mode;
-#ifdef LOG
-	FILE *flog;
-#endif
 } status;
 
+#ifdef BULLET
 static struct Arena {
 	Object *object;
 	float scale;
 	vec4 colour;
 	vector<btRigidBody *> bodies;
 } arena;
+#endif
 
+#ifdef MODELS
 struct Model {
 	struct Data {
 		enum {Wireframe, Solid, Textured} type;
@@ -99,19 +101,23 @@ struct Model {
 		btVector3 velocity;
 	};
 	vector<Data> data;
+#ifdef BULLET
 	vector<btRigidBody *> bodies;
+#endif
 	Object *object;
 };
 vector<Model *> models;
+#else
+Object *object;
+#endif
 
+#ifdef BULLET
 // Bullet physics
 btBroadphaseInterface* broadphase;
 btDefaultCollisionConfiguration* collisionConfiguration;
 btCollisionDispatcher* dispatcher;
 btSequentialImpulseConstraintSolver* solver;
 btDiscreteDynamicsWorld* dynamicsWorld;
-
-void quit();
 
 void bulletInit()
 {
@@ -160,10 +166,15 @@ mat4 bulletStep(btRigidBody* rigidBody) {
 	trans.getOpenGLMatrix((btScalar *)&matrix);
 	return matrix;
 }
+#endif
 
+void quit();
+
+#ifdef MODELS
 void setupModelData(Model *model, const Model::Init *init, int size)
 {
 	while (size--) {
+#ifdef BULLET
 		btTransform t = btTransform(btQuaternion(0, 0, 0, 1), init->position);
 		btRigidBody *rigidBody = model->object->createRigidBody(init->mass, init->modelData.scale, t);
 		rigidBody->setRestitution(init->restitution);
@@ -171,13 +182,19 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 		rigidBody->setLinearVelocity(init->velocity);
 		dynamicsWorld->addRigidBody(rigidBody);
 		model->bodies.push_back(rigidBody);
+#endif
 		model->data.push_back(init->modelData);
 		init++;
 	}
 }
+#endif
 
 void setupVertices()
 {
+#ifndef MODELS
+	object = new Wavefront("models/simple.obj");
+	//object = new Wavefront("models/nanoMiku.obj");
+#else
 	Model *model;
 
 	static const Model::Init sphereModels[] = {
@@ -211,8 +228,64 @@ void setupVertices()
 	model->object->setup();
 	setupModelData(model, cubeModels, ARRAY_SIZE(cubeModels));
 	models.push_back(model);
+#endif
 }
 
+#if !defined(MODELS) || !defined(BULLET)
+void scene()
+{
+	GLint *uniforms;
+
+	// Render solid objects
+	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
+	uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
+
+#if 0
+	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+#else
+	vec3 light(0.f, 1.f, 0.f);	// Light directionr
+	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+#endif
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
+#ifndef MODELS
+	object->bind();
+	matrix.model = mat4();
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	object->renderSolid();
+#else
+	for (Model *model: models) {
+		model->object->bind();
+		for (unsigned int i = 0; i != model->data.size(); i++) {
+			Model::Data &data = model->data[i];
+
+			if (data.type != Model::Data::Solid)
+				continue;
+			// Step model physics
+			//matrix.model = bulletStep(model->bodies[i]);
+			//matrix.model = scale(matrix.model, vec3(data.scale));
+			matrix.model = mat4();
+
+			matrix.update();
+			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
+			model->object->renderSolid();
+		}
+	}
+#endif
+}
+#else
 void scene()
 {
 	// Render wireframes
@@ -353,6 +426,7 @@ void scene()
 		}
 	}
 }
+#endif
 
 static void render()
 {
@@ -433,7 +507,11 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		camera.position -= camera.direction() * CAMERA_MOVEMENT;
 		break;
 	case GLFW_KEY_R:
+#ifdef BULLET
 		camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
+#else
+		camera.position = vec3(0.f, 0.f, 1.f + CAMERA_POSITION);
+#endif
 		camera.rotation = quat();
 	}
 	return;
@@ -476,7 +554,7 @@ void setupUniforms(GLuint index)
 		[UNIFORM_AMBIENT]	= "ambient",
 		[UNIFORM_DIFFUSE]	= "diffuse",
 		[UNIFORM_SPECULAR]	= "specular",
-		[UNIFORM_SPECULARPOWER]	= "specularPower",
+		[UNIFORM_SHININESS]	= "shininess",
 		[UNIFORM_VIEWER]	= "viewer",
 		[UNIFORM_LIGHT]		= "light",
 		[UNIFORM_COLOUR]	= "colour",
@@ -504,6 +582,11 @@ GLuint setupPrograms()
 		[PROGRAM_TEXTURE] = {
 			{GL_VERTEX_SHADER, "texture.vert"},
 			{GL_FRAGMENT_SHADER, "texture.frag"},
+			{0, NULL}
+		},
+		[PROGRAM_WAVEFRONT] = {
+			{GL_VERTEX_SHADER, "wavefront.vert"},
+			{GL_FRAGMENT_SHADER, "wavefront.frag"},
 			{0, NULL}
 		},
 	};
@@ -560,25 +643,29 @@ void quit()
 	glfwTerminate();
 
 	// Free memory
+#ifdef MODELS
 	for (Model *model: models) {
+#ifdef BULLET
 		for (btRigidBody *body: model->bodies) {
 			dynamicsWorld->removeRigidBody(body);
 			delete body;
 		}
+#endif
 		delete model->object;
 	}
+#endif
+#ifdef BULLET
 	for (btRigidBody *body: arena.bodies) {
 		dynamicsWorld->removeRigidBody(body);
 		delete body;
 	}
+#endif
+#ifdef BULLET
 	delete dynamicsWorld;
 	delete solver;
 	delete dispatcher;
 	delete collisionConfiguration;
 	delete broadphase;
-#ifdef LOG
-	fflush(status.flog);
-	fclose(status.flog);
 #endif
 	exit(0);
 }
@@ -590,14 +677,6 @@ int main(int /*argc*/, char */*argv*/[])
 		return -1;
 	}
 
-#ifdef LOG
-	if (!(status.flog = fopen("velocity.log", "w"))) {
-		cerr << "Cannot open log file" << endl;
-		glfwTerminate();
-		return -1;
-	}
-#endif
-
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -605,30 +684,21 @@ int main(int /*argc*/, char */*argv*/[])
 	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window) {
 		cerr << "Cannot create glfw Window" << endl;
-#ifdef LOG
-		fclose(status.flog);
-#endif
 		glfwTerminate();
 		return -1;
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1);
+	glfwSwapInterval(0);
 	glewExperimental = GL_TRUE;
 	glewInit();
 
 	if (setupPrograms()) {
-#ifdef LOG
-		fclose(status.flog);
-#endif
 		glfwTerminate();
 		return -1;
 	}
 
 	if (setupTextures()) {
-#ifdef LOG
-		fclose(status.flog);
-#endif
 		glfwTerminate();
 		return -1;
 	}
@@ -639,12 +709,18 @@ int main(int /*argc*/, char */*argv*/[])
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifdef BULLET
 	bulletInit();
+#endif
 
 	setupVertices();
 	status.run = true;
 	status.mode = Status::WorldMode;
+#ifdef BULLET
 	camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
+#else
+	camera.position = vec3(0.f, 0.f, 1.f + CAMERA_POSITION);
+#endif
 	camera.rotation = quat();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
@@ -652,30 +728,21 @@ int main(int /*argc*/, char */*argv*/[])
 	refreshCB(window);
 
 	float past = glfwGetTime();
+#ifdef BULLET
 	double animation = glfwGetTime();
+#endif
 	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
 		render();
 
+#ifdef BULLET
 		// Step simulation
 		if (status.run) {
 			double time = glfwGetTime();
 			dynamicsWorld->stepSimulation(time - animation, 100);
 			animation = time;
-
-#ifdef LOG
-			// Write output log
-			for (Model *model: models) {
-				for (btRigidBody *body: model->bodies) {
-					btTransform t;
-					body->getMotionState()->getWorldTransform(t);
-					btVector3 v = t.getOrigin();
-					fprintf(status.flog, "%g %g %g ", v.x(), v.y(), v.z());
-				}
-			}
-			fputc('\n', status.flog);
-#endif
 		}
+#endif
 
 		// FPS counter
 		count++;
