@@ -287,7 +287,7 @@ void GLWidget::makeCube(void)
 			texCoords.append(QVector2D(j == 2 || j == 3, j == 0 || j == 3));
 			vertices.append(QVector3D(coords[i][j][0], coords[i][j][1], coords[i][j][2]));
 		}
-	texture = bindTexture("image.jpg");
+	texture = bindTexture("zhiyb.png");
 }
 
 void GLWidget::makeDebugTexture(void)
