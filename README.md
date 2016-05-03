@@ -1,3 +1,7 @@
 COMP3214 Coursework 3
 =====================
-https://github.com/zhiyb/OpenGL
+Topic:	Arena
+
+Author:	Yubo Zhi (normanzyb@gmail.com)
+
+GitHub:	https://github.com/zhiyb/OpenGL
