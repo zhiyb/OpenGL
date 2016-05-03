@@ -20,20 +20,14 @@
 
 #include "global.h"
 #include "helper.h"
+#include "camera.h"
+
 #include "sphere.h"
 #include "cube.h"
 #include "wavefront.h"
 
-//#define BULLET
-//#define MODELS
-//#define COURSEWORK
-
-#define CAMERA_POSITION	3.f
-#define CAMERA_MOVEMENT	0.5f
-#define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define WORLD_ROTATE	(2.f * PI / 180.f)
 
-#define PI		(glm::pi<GLfloat>())
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
 
 using namespace std;
@@ -43,6 +37,8 @@ GLFWwindow *window;
 
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
+
+static Camera camera;
 
 static struct {
 	mat4 model, view, projection;
@@ -61,20 +57,9 @@ static struct {
 	}
 } matrix;
 
-static struct Camera {
-	vec3 position;
-	quat rotation;
-	vec3 direction() {return rotation * vec3(0.f, 0.f, -1.f);}
-	vec3 upward() {return rotation * vec3(0.f, 1.f, 0.f);}
-} camera;
-
 static struct Status {
 	bool run;
-#ifdef COURSEWORK
 	enum {CameraMode, TourMode} mode;
-#else
-	enum {WorldMode, CameraMode} mode;
-#endif
 } status;
 
 #ifdef BULLET
@@ -255,7 +240,7 @@ void scene()
 	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
 #endif
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
 
 #ifndef MODELS
@@ -434,18 +419,16 @@ void scene()
 }
 #endif
 
-#ifdef COURSEWORK
 void tour(const bool e)
 {
 }
-#endif
 
 static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	matrix.view = lookAt(camera.position, camera.position + camera.direction(), camera.upward());
+	matrix.view = lookAt(camera.position(), camera.position() + camera.direction(), camera.upward());
 
 	scene();
 }
@@ -465,7 +448,6 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 
-#ifdef COURSEWORK
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 	case GLFW_KEY_Q:
@@ -474,7 +456,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	}
 
-	if (mode == Status::TourMode) {
+	if (status.mode == Status::TourMode) {
 		if (key == GLFW_KEY_E)	// Exit the tour mode (optional)
 			tour(false);
 		return;
@@ -503,120 +485,9 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	case GLFW_KEY_M:
 		// Return to last position of mobile camera
 		return;
-	case GLFW_KEY_LEFT:
-		// Turn camera to the left
-		return;
-	case GLFW_KEY_RIGHT:
-		// Turn camera to the right
-		return;
-	case GLFW_KEY_UP:
-		// Increase the forward speed of the camera
-		return;
-	case GLFW_KEY_DOWN:
-		// Decrease the forward speed of the camera (minimum 0, stays)
-		return;
-	case GLFW_KEY_PAGE_UP:
-		// Increase the elevation of the camera (optional)
-		return;
-	case GLFW_KEY_PAGE_DOWN:
-		// Decrease the elevation of the camera (optional)
-		return;
-	default:
-		return;
 	}
 
-#else
-	switch (key) {
-	case GLFW_KEY_ESCAPE:
-	case GLFW_KEY_Q:
-		quit();
-		return;
-	case GLFW_KEY_M:
-		if (status.mode == Status::WorldMode) {
-			status.mode = Status::CameraMode;
-			glfwSetWindowTitle(window, "Changed to camera mode");
-		} else {
-			status.mode = Status::WorldMode;
-			glfwSetWindowTitle(window, "Changed to world mode");
-		}
-		return;
-	case GLFW_KEY_SPACE:
-		status.run = !status.run;
-		return;
-	}
-
-	if (status.mode == Status::WorldMode)
-		goto worldMode;
-
-	switch (key) {
-	case GLFW_KEY_K:	// Look upward
-		camera.rotation = rotate(camera.rotation, CAMERA_ROTATE, vec3(1.f, 0.f, 0.f));
-		break;
-	case GLFW_KEY_J:	// Look downward
-		camera.rotation = rotate(camera.rotation, -CAMERA_ROTATE, vec3(1.f, 0.f, 0.f));
-		break;
-	case GLFW_KEY_H:
-		camera.rotation = rotate(camera.rotation, CAMERA_ROTATE, vec3(0.f, 1.f, 0.f));
-		break;
-	case GLFW_KEY_L:
-		camera.rotation = rotate(camera.rotation, -CAMERA_ROTATE, vec3(0.f, 1.f, 0.f));
-		break;
-	case GLFW_KEY_UP:
-		camera.position += camera.rotation * vec3(0.f, CAMERA_MOVEMENT, 0.f);
-		break;
-	case GLFW_KEY_DOWN:
-		camera.position -= camera.rotation * vec3(0.f, CAMERA_MOVEMENT, 0.f);
-		break;
-	case GLFW_KEY_LEFT:
-		camera.position -= camera.rotation * vec3(CAMERA_MOVEMENT, 0.f, 0.f);
-		break;
-	case GLFW_KEY_RIGHT:
-		camera.position += camera.rotation * vec3(CAMERA_MOVEMENT, 0.f, 0.f);
-		break;
-	case GLFW_KEY_PAGE_UP:	// Move forward
-		camera.position += camera.direction() * CAMERA_MOVEMENT;
-		break;
-	case GLFW_KEY_PAGE_DOWN:	// Move backward
-		camera.position -= camera.direction() * CAMERA_MOVEMENT;
-		break;
-	case GLFW_KEY_R:
-#ifdef BULLET
-		camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
-#else
-		camera.position = vec3(0.f, 0.f, 1.f + CAMERA_POSITION);
-#endif
-		camera.rotation = quat();
-	}
-	return;
-
-worldMode:
-	vec3 rot;
-	switch (key) {
-	case GLFW_KEY_UP:
-		rot = vec3(1.f, 0.f, 0.f);
-		break;
-	case GLFW_KEY_DOWN:
-		rot = vec3(-1.f, 0.f, 0.f);
-		break;
-	case GLFW_KEY_LEFT:
-		rot = vec3(0.f, 1.f, 0.f);
-		break;
-	case GLFW_KEY_RIGHT:
-		rot = vec3(0.f, -1.f, 0.f);
-		break;
-	case GLFW_KEY_PAGE_UP:
-		rot = vec3(0.f, 0.f, 1.f);
-		break;
-	case GLFW_KEY_PAGE_DOWN:
-		rot = vec3(0.f, 0.f, -1.f);
-		break;
-	case GLFW_KEY_R:
-		matrix.world.rotation = quat();
-	default:
-		return;
-	}
-	matrix.world.rotation = rotate(quat(), -WORLD_ROTATE, rot) * matrix.world.rotation;
-#endif
+	camera.keyCB(key);
 }
 
 void setupUniforms(GLuint index)
@@ -790,34 +661,27 @@ int main(int /*argc*/, char */*argv*/[])
 
 	setupVertices();
 	status.run = true;
-	status.mode = Status::WorldMode;
-#ifdef BULLET
-	camera.position = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
-#else
-	camera.position = vec3(0.f, 0.f, 1.f + CAMERA_POSITION);
-#endif
-	camera.rotation = quat();
+	status.mode = Status::CameraMode;
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	refreshCB(window);
 
 	float past = glfwGetTime();
-#ifdef BULLET
 	double animation = glfwGetTime();
-#endif
 	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
 		render();
 
-#ifdef BULLET
 		// Step simulation
 		if (status.run) {
 			double time = glfwGetTime();
+#ifdef BULLET
 			dynamicsWorld->stepSimulation(time - animation, 100);
+#endif
+			camera.updateCB(time - animation);
 			animation = time;
 		}
-#endif
 
 		// FPS counter
 		count++;

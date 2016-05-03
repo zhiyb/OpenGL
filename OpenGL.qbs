@@ -26,6 +26,8 @@ CppApplication {
     ]
 
     files: [
+        "camera.cpp",
+        "camera.h",
         "main.cpp",
         "helper.cpp",
         "helper.h",

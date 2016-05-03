@@ -10,6 +10,11 @@
 #define TEXTURE_PATH	"./images/"
 #define MODEL_PATH	"./models/"
 
+//#define BULLET
+//#define MODELS
+
+#define PI		(glm::pi<GLfloat>())
+
 // Different programs
 enum {
 	PROGRAM_BASIC = 0,

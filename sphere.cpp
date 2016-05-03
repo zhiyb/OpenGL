@@ -6,8 +6,6 @@
 #include "global.h"
 #include "sphere.h"
 
-#define PI		(pi<GLfloat>())
-
 using namespace std;
 using namespace glm;
 
