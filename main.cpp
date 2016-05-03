@@ -448,6 +448,11 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 
+	if (key == GLFW_KEY_D) {
+		camera.print();
+		return;
+	}
+
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 	case GLFW_KEY_Q:
@@ -475,15 +480,28 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	case GLFW_KEY_P:
 		// Move to predefined location (screen shot)
+		camera.backup();
+		camera.setPosition(CAMERA_V0_POS);
+		camera.setRotation(CAMERA_V0_ROT);
+		camera.setSpeed(0.f);
 		return;
 	case GLFW_KEY_L:
 		// Alternative view point 1 (optional)
+		camera.backup();
+		camera.setPosition(CAMERA_V1_POS);
+		camera.setRotation(CAMERA_V1_ROT);
+		camera.setSpeed(0.f);
 		return;
 	case GLFW_KEY_O:
 		// Alternative view point 2 (overhead, optional)
+		camera.backup();
+		camera.setPosition(CAMERA_V2_POS);
+		camera.setRotation(CAMERA_V2_ROT);
+		camera.setSpeed(0.f);
 		return;
 	case GLFW_KEY_M:
 		// Return to last position of mobile camera
+		camera.restore();
 		return;
 	}
 

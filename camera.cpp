@@ -8,24 +8,19 @@
 #include "camera.h"
 #include "global.h"
 
-#define CAMERA_POSITION	3.f
-//#define CAMERA_MOVEMENT	0.5f
-
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
+#define CAMERA_ELEV	(2.f * PI / 180.f)
 #define CAMERA_ACCEL	0.2f
-#define CAMERA_ELEV	0.2f
 
 using namespace std;
 using namespace glm;
 
 Camera::Camera()
 {
-#ifdef BULLET
-	pos = vec3(0.f, 0.f, arena.scale + CAMERA_POSITION);
-#else
-	pos = vec3(0.f, 0.f, 1.f + CAMERA_POSITION);
-#endif
+	pos = CAMERA_INIT_POS;
 	rot = quat();
+	speed = 0.f;
+	backup();
 }
 
 void Camera::keyCB(int key)
@@ -63,6 +58,19 @@ void Camera::updateCB(float time)
 	pos += direction() * speed * time;
 }
 
+void Camera::backup()
+{
+	bak.pos = pos;
+	bak.rot = rot;
+}
+
+void Camera::restore()
+{
+	pos = bak.pos;
+	rot = bak.rot;
+	speed = 0;
+}
+
 void Camera::rotate(float angle)
 {
 	rot = glm::rotate(rot, angle, vec3(0.f, 1.f, 0.f));
@@ -80,7 +88,13 @@ void Camera::accelerate(float v)
 	}
 }
 
-void Camera::elevate(float v)
+void Camera::elevate(float angle)
 {
-	pos += vec3(0.f, v, 0.f);
+	rot = glm::rotate(rot, angle, vec3(1.f, 0.f, 0.f));
+}
+
+void Camera::print()
+{
+	clog << "Camera @(" << pos.x << ", " << pos.y << ", " << pos.z << "), (";
+	clog << rot.w << ", " << rot.x << ", " << rot.y << ", " << rot.z << ")" << endl;
 }
