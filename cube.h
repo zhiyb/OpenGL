@@ -8,7 +8,7 @@ class Cube : public Object
 public:
 	Cube() {setup();}
 	void renderWireframe();
-	void renderSolid();
+	void render();
 	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
 
 protected:

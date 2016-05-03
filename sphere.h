@@ -7,7 +7,7 @@ class Sphere : public Object
 {
 public:
 	Sphere(GLuint steps = 12) : steps(steps) {setup();}
-	void renderSolid();
+	void render();
 	void renderWireframe();
 	void renderPoints();
 	void renderNormal();

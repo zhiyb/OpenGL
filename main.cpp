@@ -28,7 +28,7 @@
 //#define MODELS
 
 #define CAMERA_POSITION	3.f
-#define CAMERA_MOVEMENT	0.05f
+#define CAMERA_MOVEMENT	0.5f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define WORLD_ROTATE	(2.f * PI / 180.f)
 
@@ -192,8 +192,9 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 void setupVertices()
 {
 #ifndef MODELS
-	object = new Wavefront("models/simple.obj");
-	//object = new Wavefront("models/nanoMiku.obj");
+	//object = new Wavefront("models/simple.obj");
+	object = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
+	//object = new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/");
 #else
 	Model *model;
 
@@ -260,7 +261,7 @@ void scene()
 	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	object->renderSolid();
+	object->render();
 #else
 	for (Model *model: models) {
 		model->object->bind();
@@ -558,6 +559,7 @@ void setupUniforms(GLuint index)
 		[UNIFORM_VIEWER]	= "viewer",
 		[UNIFORM_LIGHT]		= "light",
 		[UNIFORM_COLOUR]	= "colour",
+		[UNIFORM_TEXTURED]	= "textured",
 	};
 	GLuint program = programs[index].id;
 	if (!program)
@@ -614,12 +616,12 @@ GLuint setupTextures()
 		[TEXTURE_CUBE] = "diamond_block.png",
 	};
 
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
 		texture_t *tex = &textures[i];
 		unsigned char *data = stbi_load(files[i], &tex->x, &tex->y, &tex->n, 3);
 		if (data == 0) {
-			cerr << "Error load texture file " << files[i] << endl;
+			cerr << "Error loading texture file " << files[i] << endl;
 			return 1;
 		}
 		if (tex->n != 3) {
@@ -689,7 +691,7 @@ int main(int /*argc*/, char */*argv*/[])
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
+	glfwSwapInterval(1);
 	glewExperimental = GL_TRUE;
 	glewInit();
 
@@ -704,7 +706,7 @@ int main(int /*argc*/, char */*argv*/[])
 	}
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

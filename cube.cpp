@@ -19,7 +19,7 @@ void Cube::renderWireframe()
 	glDrawArrays(GL_LINES, 0, 6 * 4);
 }
 
-void Cube::renderSolid()
+void Cube::render()
 {
 	for (int i = 0; i < 6; i++)
 		glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);

@@ -19,7 +19,7 @@ void Sphere::setup()
 	setupVAO();
 }
 
-void Sphere::renderSolid()
+void Sphere::render()
 {
 	glDrawElements(GL_TRIANGLE_STRIP, offset.count.solid, GL_UNSIGNED_INT, (void *)(offset.index.solid * sizeof(GLint)));
 }

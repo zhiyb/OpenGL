@@ -12,7 +12,7 @@ public:
 	Object() {}
 	virtual ~Object() {}
 	virtual void bind();
-	virtual void renderSolid() {}
+	virtual void render() {}
 	virtual void renderWireframe() {}
 	virtual void renderPoints() {}
 	virtual void renderNormal() {}

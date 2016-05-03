@@ -1,6 +1,8 @@
 #include <iostream>
+#include <sstream>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+#include "stb_image.h"
 #include "global.h"
 #include "wavefront.h"
 
@@ -8,37 +10,116 @@ using namespace std;
 using namespace glm;
 using namespace tinyobj;
 
-void Wavefront::renderSolid()
+void Wavefront::useMaterial(const int i)
 {
+	if (i == materialID)
+		return;
+
 	GLint *uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 	// Material properties
+	const material_t &material = materials.at(i);
+
 	GLfloat ambient[3] = {0.f, 0.f, 0.f};
 	//GLfloat ambient[3] = {0.1f, 0.1f, 0.1f};
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, ambient);
-	//GLfloat diffuse[3] = {1.f, 1.f, 1.f};
-	//glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, diffuse);
 
-	unsigned int i = 0;
+	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
+	if (!material.diffuse_texname.empty()) {
+		//GLfloat diffuse[3] = {1.f, 1.f, 1.f};
+		//glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, diffuse);
+		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
+		glUniform1ui(uniforms[UNIFORM_TEXTURED], 1);
+	} else {
+		glUniform1ui(uniforms[UNIFORM_TEXTURED], 0);
+		//clog << __func__ << ": No texture";
+	}
+
+	//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
+	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
+	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
+}
+
+GLuint Wavefront::loadTexture(const string &filename)
+{
+	string path = texDir + filename;
+	texture_t tex;
+	unsigned char *data = stbi_load(path.c_str(), &tex.x, &tex.y, &tex.n, 3);
+	if (data == 0) {
+		cerr << "Error loading texture file " << path << endl;
+		return 0;
+	}
+	if (tex.n != 3) {
+		cerr << "Invalid image format from texture file " << path << endl;
+		stbi_image_free(data);
+		return 0;
+	}
+	clog << __func__ << ": Texture file " << path << " loaded, " << tex.x << "x" << tex.y << "-" << tex.n << endl;
+	glGenTextures(1, &tex.texture);
+	if (tex.texture == 0) {
+		cerr << "Cannot generate texture storage for " << path << endl;
+		stbi_image_free(data);
+		return 0;
+	}
+	glBindTexture(GL_TEXTURE_2D, tex.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	stbi_image_free(data);
+	return tex.texture;
+}
+
+void Wavefront::basename(string &path)
+{
+	string token;
+	{
+		istringstream iss(path);
+		while (getline(iss, token, '/'))
+			path = token;
+	}
+	{
+		istringstream iss(path);
+		while (getline(iss, token, '\\'))
+			path = token;
+	}
+	//clog << __func__ << ": " << path << endl << token << endl;
+}
+
+void Wavefront::render()
+{
+	materialID = -1;
+	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
-		const material_t &material = materials.at(shape.mesh.material_ids.at(0));
-		//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
-		glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
-		glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
-		glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
-
-		glBindVertexArray(vaos[i]);
+		glBindVertexArray(vaos[shapeID]);
+#if 1
+		const mesh_t &mesh = shape.mesh;
+		for (unsigned int i = 0; i + 2 < mesh.indices.size(); i += 3) {
+			useMaterial(mesh.material_ids.at(mesh.indices.at(i) / 3));
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void *)(i * sizeof(GLuint)));
+		}
+#else
+		useMaterial(shape.mesh.material_ids.at(0));
 		glDrawElements(GL_TRIANGLES, shape.mesh.indices.size(), GL_UNSIGNED_INT, 0);
-		i++;
+#endif
+		shapeID++;
 	}
 }
 
-void Wavefront::setup(const char *file)
+void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 {
 	std::string err;
-	if (!LoadObj(shapes, materials, err, file, "models/")) {
+	if (!LoadObj(shapes, materials, err, file, mtlDir)) {
 		cerr << "Unable to load wavefront file " << file << ":" << endl;
 		cerr << err << endl;
+	}
+	this->texDir = texDir;
+	for (material_t &material: materials) {
+		if (!material.diffuse_texname.empty()) {
+			string &texname = material.diffuse_texname;
+			basename(texname);
+			if (textures.find(texname) == textures.end())
+				textures[texname] = loadTexture(texname);
+		}
 	}
 #ifdef WAVEFRONT_DEBUG
 	debugPrint();
@@ -53,35 +134,32 @@ void Wavefront::setup(const char *file)
 #ifdef WAVEFRONT_DEBUG
 		clog << "Generating VAO for shape " << shape.name << endl;
 #endif
+		const mesh_t &mesh = shape.mesh;
 		glBindVertexArray(vaos[i]);
 
-		GLuint buffers[3];
-		glGenBuffers(3, &buffers[0]);
+		GLuint buffers[4];
+		glGenBuffers(4, buffers);
 
 		//clog << "\tstep: positions" << endl;
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-		glBufferData(GL_ARRAY_BUFFER, shape.mesh.positions.size() * sizeof(float), shape.mesh.positions.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh.positions.size() * sizeof(float), mesh.positions.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(ATTRIB_POSITION);
 		glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 		//clog << "\tstep: normals" << endl;
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[1]);
-		glBufferData(GL_ARRAY_BUFFER, shape.mesh.normals.size() * sizeof(float), shape.mesh.normals.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(float), mesh.normals.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(ATTRIB_NORMAL);
 		glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-#if 0
-		GLuint bTexCoord;
-		glGenBuffers(1, &bTexCoord);
-		glBindBuffer(GL_ARRAY_BUFFER, bTexCoord);
-		glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(vec2), texCoords.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
+		glBufferData(GL_ARRAY_BUFFER, mesh.texcoords.size() * sizeof(float), mesh.texcoords.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 		glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
-#endif
 
 		//clog << "\tstep: indices" << endl;
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[2]);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.mesh.indices.size() * sizeof(unsigned int), shape.mesh.indices.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
 		i++;
 	}
 }
@@ -106,6 +184,14 @@ void Wavefront::debugPrint()
 		clog << "\tsizeof num_vertices: " << shape.mesh.num_vertices.size() << endl;
 		clog << "\tsizeof material_ids: " << shape.mesh.material_ids.size() << endl;
 		clog << "\tsizeof tags: " << shape.mesh.tags.size() << endl;
+
+#if 0
+		clog << "Indices: ";
+		for (int id: shape.mesh.indices) {
+			clog << id << ", ";
+		}
+		clog << endl;
+#endif
 
 		bool diff = false;
 		int previd = -1;

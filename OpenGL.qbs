@@ -56,18 +56,12 @@ CppApplication {
     }
 
     Group {
-        name: "Vertex shaders"
+        name: "Shaders"
         files: [
             "basic.vert",
             "lighting.vert",
             "texture.vert",
             "wavefront.vert",
-        ]
-    }
-
-    Group {
-        name: "Fragment shaders"
-        files: [
             "basic.frag",
             "lighting.frag",
             "texture.frag",
@@ -85,18 +79,15 @@ CppApplication {
     }
 
     Group {
-        name: "Models: simple"
+        name: "Models"
         files: [
             "models/simple.mtl",
             "models/simple.obj",
-        ]
-    }
-
-    Group {
-        name: "Models: nanoMiku"
-        files: [
-            "models/nanoMiku.mtl",
-            "models/nanoMiku.obj",
+            "models/nanoMiku/nanoMiku.mtl",
+            "models/nanoMiku/nanoMiku.obj",
+            "models/arena/arena_01.mtl",
+            "models/arena/arena_01.obj",
+            "models/nanoMiku/tex1.png",
         ]
     }
 

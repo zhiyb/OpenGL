@@ -1,13 +1,16 @@
 #version 400
 
 out vec4 FragColor;
+uniform uint textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular;
 uniform vec3 light;
+uniform sampler2D sampler;
 
 in VERTEX {
 	vec3 normal;
 	vec3 viewer;
+	vec2 texCoord;
 } vertex;
 
 void main(void)
@@ -17,7 +20,11 @@ void main(void)
 	vec3 colour = ambient;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	colour += diffuse * cos_theta;
+	//cos_theta = 1.f;
+	if (textured != 0) {
+		colour += texture(sampler, vertex.texCoord).rgb * diffuse * cos_theta;
+	} else
+		colour += diffuse * cos_theta;
 
 	if (cos_theta != 0.0) {
 		vec3 ref = 2.0 * dot(light, normal) * normal - light;
