@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include <tiny_obj_loader.h>
 #include "stb_image.h"
 #include "global.h"
 #include "wavefront.h"

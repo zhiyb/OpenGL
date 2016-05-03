@@ -7,7 +7,7 @@ CppApplication {
     cpp.cxxLanguageVersion: "c++11"
     cpp.defines: ["GLEW_STATIC"]
     cpp.includePaths: [
-        "./Helper_Functions/include",
+        "include",
         libraries + "/stb",
         libraries + "/glm",
         libraries + "/glew-1.13.0/include",
@@ -34,47 +34,33 @@ CppApplication {
     ]
 
     Group {
-        name: "Single header libraries"
+        name: "Include"
         files: [
-            "stb_image.h",
-            "tiny_obj_loader.h",
+            "include/*",
         ]
     }
 
     Group {
-        name: "Object source files"
+        name: "Objects src"
         files: [
-            "sphere.cpp",
-            "object.cpp",
-            "cube.cpp",
-            "sphere.h",
-            "object.h",
-            "cube.h",
-            "wavefront.cpp",
-            "wavefront.h",
+            "sphere.*",
+            "object.*",
+            "cube.*",
+            "wavefront.*",
         ]
     }
 
     Group {
         name: "Shaders"
         files: [
-            "basic.vert",
-            "lighting.vert",
-            "texture.vert",
-            "wavefront.vert",
-            "basic.frag",
-            "lighting.frag",
-            "texture.frag",
-            "wavefront.frag",
+            "shaders/*",
         ]
     }
 
     Group {
         name: "Textures"
         files: [
-            "diamond_block.png",
-            "earth.jpg",
-            "firemap.png",
+            "images/*",
         ]
     }
 
@@ -95,6 +81,7 @@ CppApplication {
         name: "Miscellaneous files"
         files: [
             "config.lua",
+            "README.md",
         ]
     }
 

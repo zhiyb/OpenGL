@@ -20,7 +20,7 @@ void main(void)
 	vec3 colour = ambient;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	//cos_theta = 1.f;
+	cos_theta = 1.f;
 	if (textured != 0) {
 		colour += texture(sampler, vertex.texCoord).rgb * diffuse * cos_theta;
 	} else

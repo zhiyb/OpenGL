@@ -6,6 +6,10 @@
 
 #include <GL/glew.h>
 
+#define SHADER_PATH	"./shaders/"
+#define TEXTURE_PATH	"./images/"
+#define MODEL_PATH	"./models/"
+
 // Different programs
 enum {
 	PROGRAM_BASIC = 0,

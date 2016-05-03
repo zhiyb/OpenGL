@@ -1,7 +1,7 @@
 --
 -- Coursework configuration
 --
--- Name:
+-- Name: COMP3214 Coursework 3 (yz39g13)
 --
 print("Config.lua executed")
 GLFW = 3

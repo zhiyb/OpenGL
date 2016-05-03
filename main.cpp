@@ -26,6 +26,7 @@
 
 //#define BULLET
 //#define MODELS
+//#define COURSEWORK
 
 #define CAMERA_POSITION	3.f
 #define CAMERA_MOVEMENT	0.5f
@@ -69,7 +70,11 @@ static struct Camera {
 
 static struct Status {
 	bool run;
-	enum {WorldMode = 0, CameraMode} mode;
+#ifdef COURSEWORK
+	enum {CameraMode, TourMode} mode;
+#else
+	enum {WorldMode, CameraMode} mode;
+#endif
 } status;
 
 #ifdef BULLET
@@ -192,7 +197,7 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 void setupVertices()
 {
 #ifndef MODELS
-	//object = new Wavefront("models/simple.obj");
+	//object = new Wavefront("models/simple.obj", "models/", "models/");
 	object = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
 	//object = new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/");
 #else
@@ -241,7 +246,7 @@ void scene()
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
 	uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
-#if 0
+#if 1
 	vec3 light(0.f, 0.f, 1.f);	// Light direction
 	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
@@ -429,6 +434,12 @@ void scene()
 }
 #endif
 
+#ifdef COURSEWORK
+void tour(const bool e)
+{
+}
+#endif
+
 static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -454,6 +465,67 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 
+#ifdef COURSEWORK
+	switch (key) {
+	case GLFW_KEY_ESCAPE:
+	case GLFW_KEY_Q:
+		// Exit the program
+		quit();
+		return;
+	}
+
+	if (mode == Status::TourMode) {
+		if (key == GLFW_KEY_E)	// Exit the tour mode (optional)
+			tour(false);
+		return;
+	}
+
+	switch (key) {
+	case GLFW_KEY_T:
+		// Start the tour (keys except E, Q, ESC are ignored)
+		tour(false);
+		return;
+	case GLFW_KEY_SPACE:
+		// Stop all motion (optional)
+		return;
+	case GLFW_KEY_R:
+		// Reset all animation (optional)
+		return;
+	case GLFW_KEY_P:
+		// Move to predefined location (screen shot)
+		return;
+	case GLFW_KEY_L:
+		// Alternative view point 1 (optional)
+		return;
+	case GLFW_KEY_O:
+		// Alternative view point 2 (overhead, optional)
+		return;
+	case GLFW_KEY_M:
+		// Return to last position of mobile camera
+		return;
+	case GLFW_KEY_LEFT:
+		// Turn camera to the left
+		return;
+	case GLFW_KEY_RIGHT:
+		// Turn camera to the right
+		return;
+	case GLFW_KEY_UP:
+		// Increase the forward speed of the camera
+		return;
+	case GLFW_KEY_DOWN:
+		// Decrease the forward speed of the camera (minimum 0, stays)
+		return;
+	case GLFW_KEY_PAGE_UP:
+		// Increase the elevation of the camera (optional)
+		return;
+	case GLFW_KEY_PAGE_DOWN:
+		// Decrease the elevation of the camera (optional)
+		return;
+	default:
+		return;
+	}
+
+#else
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 	case GLFW_KEY_Q:
@@ -544,6 +616,7 @@ worldMode:
 		return;
 	}
 	matrix.world.rotation = rotate(quat(), -WORLD_ROTATE, rot) * matrix.world.rotation;
+#endif
 }
 
 void setupUniforms(GLuint index)
@@ -572,23 +645,23 @@ GLuint setupPrograms()
 {
 	static const shader_t shaders[PROGRAM_COUNT][3] = {
 		[PROGRAM_BASIC] = {
-			{GL_VERTEX_SHADER, "basic.vert"},
-			{GL_FRAGMENT_SHADER, "basic.frag"},
+			{GL_VERTEX_SHADER, SHADER_PATH "basic.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "basic.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_LIGHTING] = {
-			{GL_VERTEX_SHADER, "lighting.vert"},
-			{GL_FRAGMENT_SHADER, "lighting.frag"},
+			{GL_VERTEX_SHADER, SHADER_PATH "lighting.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "lighting.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_TEXTURE] = {
-			{GL_VERTEX_SHADER, "texture.vert"},
-			{GL_FRAGMENT_SHADER, "texture.frag"},
+			{GL_VERTEX_SHADER, SHADER_PATH "texture.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_WAVEFRONT] = {
-			{GL_VERTEX_SHADER, "wavefront.vert"},
-			{GL_FRAGMENT_SHADER, "wavefront.frag"},
+			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
 			{0, NULL}
 		},
 	};
@@ -611,9 +684,9 @@ GLuint setupPrograms()
 GLuint setupTextures()
 {
 	const static char *files[TEXTURE_COUNT] = {
-		[TEXTURE_SPHERE] = "earth.jpg",
-		[TEXTURE_S2] = "firemap.png",
-		[TEXTURE_CUBE] = "diamond_block.png",
+		[TEXTURE_SPHERE] = TEXTURE_PATH "earth.jpg",
+		[TEXTURE_S2] = TEXTURE_PATH "firemap.png",
+		[TEXTURE_CUBE] = TEXTURE_PATH "diamond_block.png",
 	};
 
 	//glActiveTexture(GL_TEXTURE0);
