@@ -17,6 +17,7 @@ CppApplication {
     cpp.libraryPaths: [
         libraries + "/bullet3-2.83.7/bin",
         libraries + "/glew-1.13.0/lib/Release/Win32",
+        //libraries + "/glew-1.13.0.build/build/cmake/build/lib",
         libraries + "/glfw-3.1.2.bin.WIN32/lib-mingw-w64",
     ]
     cpp.linkerFlags: [
@@ -45,6 +46,10 @@ CppApplication {
     Group {
         name: "Objects src"
         files: [
+            "cubeenclosed.cpp",
+            "cubeenclosed.h",
+            "skybox.cpp",
+            "skybox.h",
             "sphere.*",
             "object.*",
             "cube.*",

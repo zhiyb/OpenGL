@@ -16,15 +16,15 @@ in VERTEX {
 void main(void)
 {
 	vec3 normal = vertex.normal;
+	vec3 tex = vec3(1.0, 1.0, 1.0);
+	if (textured != 0)
+		tex = texture(sampler, vertex.texCoord).rgb;
 
-	vec3 colour = ambient;
+	vec3 colour = tex * ambient;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	cos_theta = 1.f;
-	if (textured != 0) {
-		colour += texture(sampler, vertex.texCoord).rgb * diffuse * cos_theta;
-	} else
-		colour += diffuse * cos_theta;
+	//cos_theta = 1.f;
+	colour += tex * diffuse * cos_theta;
 
 	if (cos_theta != 0.0) {
 		vec3 ref = 2.0 * dot(light, normal) * normal - light;

@@ -25,6 +25,7 @@ public:
 	glm::quat rotation() const {return rot;}
 	glm::vec3 direction() const {return rot * glm::vec3(0.f, 0.f, -1.f);}
 	glm::vec3 upward() const {return rot * glm::vec3(0.f, 1.f, 0.f);}
+	glm::mat4 view() const;
 
 	void print();
 
@@ -37,5 +38,7 @@ private:
 	glm::quat rot;
 	float speed;
 };
+
+extern Camera camera;
 
 #endif // CAMERA_H

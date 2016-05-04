@@ -6,7 +6,7 @@
 #include "object.h"
 #include "tiny_obj_loader.h"
 
-#define WAVEFRONT_DEBUG
+//#define WAVEFRONT_DEBUG
 
 class Wavefront : public Object
 {

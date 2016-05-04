@@ -24,6 +24,8 @@
 
 #include "sphere.h"
 #include "cube.h"
+#include "cubeenclosed.h"
+#include "skybox.h"
 #include "wavefront.h"
 
 #define WORLD_ROTATE	(2.f * PI / 180.f)
@@ -38,7 +40,7 @@ GLFWwindow *window;
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
-static Camera camera;
+Camera camera;
 
 static struct {
 	mat4 model, view, projection;
@@ -71,7 +73,10 @@ static struct Arena {
 } arena;
 #endif
 
-#ifdef MODELS
+#ifndef MODELS
+Skybox *skybox;
+Object *object;
+#else
 struct Model {
 	struct Data {
 		enum {Wireframe, Solid, Textured} type;
@@ -97,8 +102,6 @@ struct Model {
 	Object *object;
 };
 vector<Model *> models;
-#else
-Object *object;
 #endif
 
 #ifdef BULLET
@@ -182,6 +185,7 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 void setupVertices()
 {
 #ifndef MODELS
+	skybox = new Skybox;
 	//object = new Wavefront("models/simple.obj", "models/", "models/");
 	object = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
 	//object = new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/");
@@ -223,13 +227,42 @@ void setupVertices()
 }
 
 #if !defined(MODELS) || !defined(BULLET)
-void scene()
+static void renderSkybox()
 {
-	GLint *uniforms;
+	glDepthMask(GL_FALSE);
+	// Render solid objects
+	glUseProgram(programs[PROGRAM_SKYBOX].id);
+	GLint *uniforms = programs[PROGRAM_SKYBOX].uniforms;
+
+	// Material properties
+	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.7f);
+
+	// Render skybox
+	matrix.model = translate(mat4(), camera.position());
+	//matrix.model = scale(matrix.model, vec3(1.f));
+	//matrix.model = mat4();
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
+	skybox->bind();
+	skybox->render();
+	glDepthMask(GL_TRUE);
+}
+
+static void render()
+{
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	matrix.view = camera.view();
+
+	renderSkybox();
 
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
-	uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
+	GLint *uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 #if 1
 	vec3 light(0.f, 0.f, 1.f);	// Light direction
@@ -423,16 +456,6 @@ void tour(const bool e)
 {
 }
 
-static void render()
-{
-	glClearColor(0.f, 0.f, 0.f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	matrix.view = lookAt(camera.position(), camera.position() + camera.direction(), camera.upward());
-
-	scene();
-}
-
 static void refreshCB(GLFWwindow *window)
 {
 	int width, height;
@@ -440,7 +463,7 @@ static void refreshCB(GLFWwindow *window)
 	glViewport(0, 0, width, height);
 	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 100.f);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.f);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -553,6 +576,11 @@ GLuint setupPrograms()
 			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
 			{0, NULL}
 		},
+		[PROGRAM_SKYBOX] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "skybox.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "skybox.frag"},
+			{0, NULL}
+		},
 	};
 
 	for (GLuint idx = 0; idx < PROGRAM_COUNT; idx++) {
@@ -572,30 +600,39 @@ GLuint setupPrograms()
 
 GLuint setupTextures()
 {
-	const static char *files[TEXTURE_COUNT] = {
-		[TEXTURE_SPHERE] = TEXTURE_PATH "earth.jpg",
-		[TEXTURE_S2] = TEXTURE_PATH "firemap.png",
-		[TEXTURE_CUBE] = TEXTURE_PATH "diamond_block.png",
+	const struct textureInfo_t {
+		//GLenum type;
+		const char *file;
+	} textureInfo[TEXTURE_COUNT] = {
+		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.jpg"},
+		[TEXTURE_S2]		= {TEXTURE_PATH "firemap.png"},
+		// diamond_block.png: Minecraft
+		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
+		// skybox3.png: http://scmapdb.com/skybox:sky-blu
+		[TEXTURE_SKYBOX]	= {TEXTURE_PATH "skybox3.png"},
+		[TEXTURE_DEBUG]		= {TEXTURE_PATH "debug.png"},
 	};
 
 	//glActiveTexture(GL_TEXTURE0);
 	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
-		texture_t *tex = &textures[i];
-		unsigned char *data = stbi_load(files[i], &tex->x, &tex->y, &tex->n, 3);
+		const textureInfo_t &info = textureInfo[i];
+		texture_t &tex = textures[i];
+		unsigned char *data = stbi_load(info.file, &tex.x, &tex.y, &tex.n, 3);
 		if (data == 0) {
-			cerr << "Error loading texture file " << files[i] << endl;
+			cerr << "Error loading texture file " << info.file << endl;
 			return 1;
 		}
-		if (tex->n != 3) {
-			cerr << "Invalid image format from texture file " << files[i] << endl;
+		if (tex.n != 3) {
+			cerr << "Invalid image format from texture file " << info.file << endl;
 			stbi_image_free(data);
 			return 2;
 		}
-		glGenTextures(1, &tex->texture);
-		glBindTexture(GL_TEXTURE_2D, tex->texture);
+		//tex.type = info.type;
+		glGenTextures(1, &tex.texture);
+		glBindTexture(GL_TEXTURE_2D, tex.texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex->x, tex->y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
 
@@ -607,7 +644,10 @@ void quit()
 	glfwTerminate();
 
 	// Free memory
-#ifdef MODELS
+#ifndef MODELS
+	delete skybox;
+	delete object;
+#else
 	for (Model *model: models) {
 #ifdef BULLET
 		for (btRigidBody *body: model->bodies) {
@@ -655,7 +695,24 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 	glewExperimental = GL_TRUE;
-	glewInit();
+	if (glewInit() != GLEW_OK) {
+		cerr << "Cannot initialise glew" << endl;
+		glfwTerminate();
+		return -1;
+	}
+
+#if 0	
+	clog << (glIsEnabled(GL_TEXTURE_CUBE_MAP_ARB) ? "Yes" : "No") << endl;
+	clog << (GLEW_ARB_texture_cube_map ? "Yes" : "No") << endl;
+	clog << (glfwExtensionSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
+	clog << (glewIsSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
+
+	GLint n, i;
+	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+	clog << "Extensions: " << n << endl;
+	for (i = 0; i < n; i++)
+		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
+#endif
 
 	if (setupPrograms()) {
 		glfwTerminate();
@@ -668,8 +725,9 @@ int main(int /*argc*/, char */*argv*/[])
 	}
 
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
+	//glEnable(GL_TEXTURE_CUBE_MAP);
 	//glEnable(GL_BLEND);
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

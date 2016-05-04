@@ -98,3 +98,8 @@ void Camera::print()
 	clog << "Camera @(" << pos.x << ", " << pos.y << ", " << pos.z << "), (";
 	clog << rot.w << ", " << rot.x << ", " << rot.y << ", " << rot.z << ")" << endl;
 }
+
+glm::mat4 Camera::view() const
+{
+	return lookAt(pos, pos + direction(), upward());
+}

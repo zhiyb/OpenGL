@@ -54,7 +54,9 @@ GLuint Wavefront::loadTexture(const string &filename)
 		stbi_image_free(data);
 		return 0;
 	}
+#ifdef WAVEFRONT_DEBUG
 	clog << __func__ << ": Texture file " << path << " loaded, " << tex.x << "x" << tex.y << "-" << tex.n << endl;
+#endif
 	glGenTextures(1, &tex.texture);
 	if (tex.texture == 0) {
 		cerr << "Cannot generate texture storage for " << path << endl;

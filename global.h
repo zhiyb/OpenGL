@@ -16,7 +16,7 @@
 #ifdef BULLET
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
 #else
-#define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + 3.f)
+#define CAMERA_INIT_POS	glm::vec3(0.f, 1.f, 1.f + 3.f)
 #endif
 #define CAMERA_V0_POS	CAMERA_INIT_POS
 #define CAMERA_V0_ROT	glm::quat()
@@ -33,6 +33,7 @@ enum {
 	PROGRAM_LIGHTING,
 	PROGRAM_TEXTURE,
 	PROGRAM_WAVEFRONT,
+	PROGRAM_SKYBOX,
 	PROGRAM_COUNT
 };
 
@@ -65,6 +66,8 @@ enum {
 	TEXTURE_SPHERE,
 	TEXTURE_S2,
 	TEXTURE_CUBE,
+	TEXTURE_SKYBOX,
+	TEXTURE_DEBUG,
 	TEXTURE_COUNT
 };
 
@@ -77,6 +80,7 @@ extern program_t programs[PROGRAM_COUNT];
 
 struct texture_t {
 	GLuint texture;
+	//GLenum type;
 	int x, y, n;
 };
 extern texture_t textures[TEXTURE_COUNT];
