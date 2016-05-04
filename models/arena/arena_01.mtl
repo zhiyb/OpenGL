@@ -1,0 +1,308 @@
+# Blender MTL File: 'model.blend'
+# Material Count: 28
+
+newmtl 0007_Mis
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.407843 0.301176 0.238431
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\0007_Mis.png
+
+newmtl 0128_Whi
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl 1093986_
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.263529 0.134902 0.021961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\1093986_.png
+
+newmtl Blinds_R
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.602353 0.574118 0.338824
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Blinds_R.png
+
+newmtl Color_00
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.181961 0.181961 0.181961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl Fencing_
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.501961 0.501961 0.501961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Fencing_.png
+map_d  C:\\Users\\jiayang\\Documents\\OpenGL\\Assets\\model\\export\\Fencing_.png
+
+newmtl Foregrou
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl FrontCol
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl Untitl01.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.429804 0.436078 0.269804
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Untitl01.png
+
+newmtl Untitl02.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.341961 0.341961 0.341961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Untitl02.png
+map_d  C:\\Users\\jiayang\\Documents\\OpenGL\\Assets\\model\\export\\Untitl02.png
+
+newmtl Untitl03.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.266667 0.065882 0.128627
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Untitl03.png
+
+newmtl Untitl04.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.181961 0.119216 0.084706
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Untitl04.png
+
+newmtl Untitled.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.225882 0.225882 0.225882
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\Untitled.png
+
+newmtl _1
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.216471 0.241569 0.291765
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_1.png
+
+newmtl _10
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.461176 0.257255 0.191373
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_10.png
+
+newmtl _12
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.702745 0.326275 0.018824
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.400000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_12.png
+
+newmtl _16
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.175686 0.178824 0.181961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_16.png
+
+newmtl _17
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.734118 0.702745 0.668235
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_17.png
+
+newmtl _19
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.037647
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_19.png
+
+newmtl _2
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.517647 0.517647 0.517647
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_2.png
+
+newmtl _20
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.000000
+illum 2
+
+newmtl _21
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.021961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_21.png
+
+newmtl _49
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.288627 0.266667 0.291765
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_49.png
+
+newmtl _5
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.709020 0.709020 0.709020
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_5.png
+
+newmtl _6
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.702745 0.702745 0.702745
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 0.860000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_6.png
+map_d  C:\\Users\\jiayang\\Documents\\OpenGL\\Assets\\model\\export\\_6.png
+
+newmtl _7
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.188235 0.213333 0.385882
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_7.png
+
+newmtl _9
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.021961
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\_9.png
+
+newmtl preview_.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.608627 0.608627 0.608627
+Ks 0.164706 0.164706 0.164706
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\jiayang\Documents\OpenGL\Assets\model\export\preview_.png

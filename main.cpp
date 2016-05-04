@@ -62,7 +62,8 @@ static struct Arena {
 
 #ifndef MODELS
 Skybox *skybox;
-Object *object;
+//Object *object;
+vector<Object *> objects;
 #else
 struct Model {
 	struct Data {
@@ -174,8 +175,8 @@ void setupVertices()
 #ifndef MODELS
 	skybox = new Skybox;
 	//object = new Wavefront("models/simple.obj", "models/", "models/");
-	object = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
-	//object = new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/");
+	objects.push_back(new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/"));
+	objects.push_back(new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/"));
 #else
 	Model *model;
 
@@ -257,14 +258,16 @@ static void render()
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
 
 #ifndef MODELS
-	object->bind();
 	matrix.model = mat4();
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	object->render();
+	for (Object *object: objects) {
+		object->bind();
+		object->render();
+	}
 #else
 	for (Model *model: models) {
 		model->object->bind();
@@ -511,6 +514,16 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	camera.keyCB(key);
 }
 
+void mouseCB(GLFWwindow */*window*/, int button, int action, int /*mods*/)
+{
+	camera.mouseCB(button, action);
+}
+
+void cursorCB(GLFWwindow *window, double xpos, double ypos)
+{
+	camera.cursorCB(xpos, ypos);
+}
+
 void quit()
 {
 	glfwTerminate();
@@ -518,7 +531,8 @@ void quit()
 	// Free memory
 #ifndef MODELS
 	delete skybox;
-	delete object;
+	for (Object *object: objects)
+		delete object;
 #else
 	for (Model *model: models) {
 #ifdef BULLET
@@ -592,11 +606,11 @@ int main(int /*argc*/, char */*argv*/[])
 	}
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_TEXTURE_CUBE_MAP);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifdef BULLET
 	bulletInit();
@@ -608,6 +622,8 @@ int main(int /*argc*/, char */*argv*/[])
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
+	glfwSetMouseButtonCallback(window, mouseCB);
+	glfwSetCursorPosCallback(window, cursorCB);
 	refreshCB(window);
 
 	float past = glfwGetTime();

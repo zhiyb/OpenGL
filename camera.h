@@ -9,6 +9,8 @@ class Camera
 public:
 	Camera();
 	void keyCB(int key);
+	void mouseCB(int button, int action);
+	void cursorCB(double xpos, double ypos);
 	void updateCB(float time);
 
 	void backup();
@@ -38,6 +40,11 @@ private:
 	glm::vec3 pos;
 	glm::quat rot;
 	float speed;
+
+	struct {
+		bool pressed;
+		glm::vec2 cursor;
+	} input;
 };
 
 extern Camera camera;

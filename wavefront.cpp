@@ -40,12 +40,12 @@ GLuint Wavefront::loadTexture(const string &filename)
 {
 	string path = texDir + filename;
 	texture_t tex;
-	unsigned char *data = stbi_load(path.c_str(), &tex.x, &tex.y, &tex.n, 3);
+	unsigned char *data = stbi_load(path.c_str(), &tex.x, &tex.y, &tex.n, 4);
 	if (data == 0) {
 		cerr << "Error loading texture file " << path << endl;
 		return 0;
 	}
-	if (tex.n != 3) {
+	if (tex.n != 4) {
 		cerr << "Invalid image format from texture file " << path << endl;
 		stbi_image_free(data);
 		return 0;
@@ -62,7 +62,7 @@ GLuint Wavefront::loadTexture(const string &filename)
 	glBindTexture(GL_TEXTURE_2D, tex.texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex.x, tex.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	stbi_image_free(data);
 	return tex.texture;
 }
@@ -91,10 +91,22 @@ void Wavefront::render()
 		glBindVertexArray(vaos[shapeID]);
 #if 1
 		const mesh_t &mesh = shape.mesh;
-		for (unsigned int i = 0; i + 2 < mesh.indices.size(); i += 3) {
-			useMaterial(mesh.material_ids.at(mesh.indices.at(i) / 3));
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void *)(i * sizeof(GLuint)));
+		if (mesh.indices.size() < 3)
+			continue;
+
+		unsigned int start = 0;
+		int mtl = mesh.material_ids.at(mesh.indices.at(0) / 3);
+		for (unsigned int i = start + 3; i + 2 < mesh.indices.size(); i += 3) {
+			int mtl2 = mesh.material_ids.at(mesh.indices.at(i) / 3);
+			if (mtl == mtl2)
+				continue;
+			useMaterial(mtl);
+			mtl = mtl2;
+			glDrawElements(GL_TRIANGLES, i - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
+			start = i;
 		}
+		useMaterial(mtl);
+		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
 #else
 		useMaterial(shape.mesh.material_ids.at(0));
 		glDrawElements(GL_TRIANGLES, shape.mesh.indices.size(), GL_UNSIGNED_INT, 0);
