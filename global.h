@@ -39,7 +39,6 @@ enum {
 };
 
 // Uniform locations
-#if 1
 #define UNIFORM_MVP		"mvpMatrix"
 #define UNIFORM_MODEL		"modelMatrix"
 #define UNIFORM_NORMAL		"normalMatrix"
@@ -51,22 +50,6 @@ enum {
 #define UNIFORM_LIGHT		"light"
 #define UNIFORM_COLOUR		"colour"
 #define UNIFORM_TEXTURED	"textured"
-#else
-enum {
-	UNIFORM_MVP = 0,
-	UNIFORM_MODEL,
-	UNIFORM_NORMAL,
-	UNIFORM_AMBIENT,
-	UNIFORM_DIFFUSE,
-	UNIFORM_SPECULAR,
-	UNIFORM_SHININESS,
-	UNIFORM_VIEWER,
-	UNIFORM_LIGHT,
-	UNIFORM_COLOUR,
-	UNIFORM_TEXTURED,
-	UNIFORM_COUNT
-};
-#endif
 
 // Attribuate locations
 enum {
@@ -86,10 +69,16 @@ enum {
 	TEXTURE_COUNT
 };
 
-typedef std::unordered_map<std::string, GLint> uniformMap;
+struct uniform_t {
+	// location = -1: silently ignored
+	uniform_t() : id(-1) {}
+	uniform_t(int i) : id(i) {}
+	operator int() {return id;}
+	GLint id;
+};
+typedef std::unordered_map<std::string, uniform_t> uniformMap;
+
 struct program_t {
-	// Uniform locations
-	//GLint uniforms[UNIFORM_COUNT];
 	uniformMap uniforms;
 	GLuint id;
 };

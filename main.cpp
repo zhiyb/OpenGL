@@ -15,9 +15,6 @@
 #include <btBulletDynamicsCommon.h>
 #include "world.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include "global.h"
 #include "helper.h"
 #include "camera.h"
@@ -239,12 +236,9 @@ static void renderSkybox()
 
 	// Render skybox
 	matrix.model = translate(mat4(), camera.position());
-	//matrix.model = scale(matrix.model, vec3(1.f));
 	//matrix.model = mat4();
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	//glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	//glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
 	skybox->bind();
@@ -529,113 +523,6 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	}
 
 	camera.keyCB(key);
-}
-
-void setupUniforms(GLuint index)
-{
-	GLuint program = programs[index].id;
-	if (!program)
-		return;
-	GLint cnt;
-	glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &cnt);
-	//clog << __func__ << ": number of uniforms: " << cnt << endl;
-	char name[32];
-	uniformMap &uniforms = programs[index].uniforms;
-	for (GLint idx = 0; idx < cnt; idx++) {
-		GLsizei len;
-		GLint size;
-		GLenum type;
-		glGetActiveUniform(program, idx, sizeof(name), &len, &size, &type, name);
-		uniforms[name] = glGetUniformLocation(program, name);
-		//clog << name << '@' << uniforms[name] << ' ';
-	}
-	//clog << endl;
-}
-
-GLuint setupPrograms()
-{
-	static const shader_t shaders[PROGRAM_COUNT][3] = {
-		[PROGRAM_BASIC] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "basic.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "basic.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_LIGHTING] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "lighting.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "lighting.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_TEXTURE] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "texture.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_WAVEFRONT] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_SKYBOX] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "skybox.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "skybox.frag"},
-			{0, NULL}
-		},
-	};
-
-	for (GLuint idx = 0; idx < PROGRAM_COUNT; idx++) {
-		GLuint program = glCreateProgram();
-		if (program == 0)
-			return 1;
-		programs[idx].id = program;
-		glBindAttribLocation(program, ATTRIB_POSITION, "position");
-		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
-		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texCoord");
-		if (setupProgramFromFiles(program, shaders[idx]) != 0)
-			return 2;
-		setupUniforms(idx);
-	}
-	return 0;
-}
-
-GLuint setupTextures()
-{
-	const struct textureInfo_t {
-		//GLenum type;
-		const char *file;
-	} textureInfo[TEXTURE_COUNT] = {
-		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.jpg"},
-		[TEXTURE_S2]		= {TEXTURE_PATH "firemap.png"},
-		// diamond_block.png: Minecraft
-		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
-		// skybox3.png: http://scmapdb.com/skybox:sky-blu
-		[TEXTURE_SKYBOX]	= {TEXTURE_PATH "skybox3.png"},
-		[TEXTURE_DEBUG]		= {TEXTURE_PATH "debug.png"},
-	};
-
-	//glActiveTexture(GL_TEXTURE0);
-	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
-		const textureInfo_t &info = textureInfo[i];
-		texture_t &tex = textures[i];
-		unsigned char *data = stbi_load(info.file, &tex.x, &tex.y, &tex.n, 3);
-		if (data == 0) {
-			cerr << "Error loading texture file " << info.file << endl;
-			return 1;
-		}
-		if (tex.n != 3) {
-			cerr << "Invalid image format from texture file " << info.file << endl;
-			stbi_image_free(data);
-			return 2;
-		}
-		//tex.type = info.type;
-		glGenTextures(1, &tex.texture);
-		glBindTexture(GL_TEXTURE_2D, tex.texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		stbi_image_free(data);
-	}
-
-	return 0;
 }
 
 void quit()

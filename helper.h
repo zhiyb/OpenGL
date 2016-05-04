@@ -14,4 +14,7 @@ GLuint setupShaderFromFile(GLenum type, const char *path);
 GLuint setupProgram(GLuint program, const GLuint *shaders);
 GLuint setupProgramFromFiles(GLuint program, const shader_t *shaders);
 
+GLuint setupPrograms();
+GLuint setupTextures();
+
 #endif // HELPER_H

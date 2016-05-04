@@ -3,6 +3,7 @@
 out vec4 FragColor;
 uniform float ambient;
 uniform sampler2D sampler;
+uniform sampler2D cube[6];
 
 in VERTEX {
 	vec2 texCoord;
