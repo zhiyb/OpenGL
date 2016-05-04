@@ -4,14 +4,6 @@
 #include <map>
 #include <cstdlib>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include <btBulletDynamicsCommon.h>
 #include "world.h"
 
@@ -25,10 +17,6 @@
 #include "skybox.h"
 #include "wavefront.h"
 
-#define WORLD_ROTATE	(2.f * PI / 180.f)
-
-#define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
-
 using namespace std;
 using namespace glm;
 
@@ -36,6 +24,8 @@ GLFWwindow *window;
 
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
+
+environment_t environment;
 
 Camera camera;
 
@@ -232,7 +222,7 @@ static void renderSkybox()
 	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
 
 	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.7f);
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.ambient);
 
 	// Render skybox
 	matrix.model = translate(mat4(), camera.position());
@@ -258,15 +248,11 @@ static void render()
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
-#if 1
-	vec3 light(0.f, 0.f, 1.f);	// Light direction
+	vec3 light(0.f, 0.f, 1.f);		// Light direction
 	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-#else
-	vec3 light(0.f, 1.f, 0.f);	// Light directionr
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-#endif
+	vec3 intensity(0.5f, 0.3f, 0.2f);	// Light intensity
+	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&intensity);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
 
@@ -465,7 +451,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 
-	if (key == GLFW_KEY_D) {
+	if (key == GLFW_KEY_X) {
 		camera.print();
 		return;
 	}
@@ -587,7 +573,7 @@ int main(int /*argc*/, char */*argv*/[])
 		return -1;
 	}
 
-#if 0	
+#if 0	// GLFW supports cube_map, but GLEW does not?
 	clog << (glIsEnabled(GL_TEXTURE_CUBE_MAP_ARB) ? "Yes" : "No") << endl;
 	clog << (GLEW_ARB_texture_cube_map ? "Yes" : "No") << endl;
 	clog << (glfwExtensionSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
@@ -600,12 +586,7 @@ int main(int /*argc*/, char */*argv*/[])
 		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
 #endif
 
-	if (setupPrograms()) {
-		glfwTerminate();
-		return -1;
-	}
-
-	if (setupTextures()) {
+	if (setupPrograms() || setupTextures()) {
 		glfwTerminate();
 		return -1;
 	}
@@ -651,7 +632,7 @@ int main(int /*argc*/, char */*argv*/[])
 		if (now - past > 3) {
 			float fps = (float)count / (now - past);
 			char buf[32];
-			sprintf(buf, "%g FPS [%s]", fps, status.mode == Status::CameraMode ? "Camera" : "World");
+			sprintf(buf, "%g FPS [%s]", fps, status.mode == Status::CameraMode ? "Camera" : "Tour");
 			glfwSetWindowTitle(window, buf);
 			count = 0;
 			past = now;

@@ -6,8 +6,6 @@
 #include "object.h"
 #include "tiny_obj_loader.h"
 
-//#define WAVEFRONT_DEBUG
-
 class Wavefront : public Object
 {
 public:
@@ -24,9 +22,7 @@ private:
 	void useMaterial(const int i);
 	GLuint loadTexture(const std::string &filename);
 	void basename(std::string &path);
-#ifdef WAVEFRONT_DEBUG
 	void debugPrint();
-#endif
 
 	int materialID;
 	std::string texDir;

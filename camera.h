@@ -23,8 +23,9 @@ public:
 	void setSpeed(float speed) {this->speed = speed;}
 	glm::vec3 position() const {return pos;}
 	glm::quat rotation() const {return rot;}
-	glm::vec3 direction() const {return rot * glm::vec3(0.f, 0.f, -1.f);}
+	glm::vec3 right() const {return rot * glm::vec3(1.f, 0.f, 0.f);}
 	glm::vec3 upward() const {return rot * glm::vec3(0.f, 1.f, 0.f);}
+	glm::vec3 forward() const {return rot * glm::vec3(0.f, 0.f, -1.f);}
 	glm::mat4 view() const;
 
 	void print();

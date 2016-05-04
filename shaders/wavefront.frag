@@ -4,7 +4,7 @@ out vec4 FragColor;
 uniform uint textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular;
-uniform vec3 light;
+uniform vec3 light, lightIntensity;
 uniform sampler2D sampler;
 
 in VERTEX {
@@ -24,7 +24,7 @@ void main(void)
 
 	float cos_theta = max(dot(light, normal), 0.0);
 	//cos_theta = 1.f;
-	colour += tex * diffuse * cos_theta;
+	colour += tex * diffuse * cos_theta * lightIntensity;
 
 	if (cos_theta != 0.0) {
 		vec3 ref = 2.0 * dot(light, normal) * normal - light;

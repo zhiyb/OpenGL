@@ -2,9 +2,12 @@
 #include <sstream>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-#include "stb_image.h"
+#include <stb_image.h>
+#include "world.h"
 #include "global.h"
 #include "wavefront.h"
+
+#define WAVEFRONT_DEBUG
 
 using namespace std;
 using namespace glm;
@@ -14,30 +17,23 @@ void Wavefront::useMaterial(const int i)
 {
 	if (i == materialID)
 		return;
-
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 	// Material properties
 	const material_t &material = materials.at(i);
-
-	GLfloat ambient[3] = {0.f, 0.f, 0.f};
-	//GLfloat ambient[3] = {0.1f, 0.1f, 0.1f};
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, ambient);
-
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.ambient);
+	//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
 	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
+	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
+	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
+
 	if (!material.diffuse_texname.empty()) {
-		//GLfloat diffuse[3] = {1.f, 1.f, 1.f};
-		//glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, diffuse);
 		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
 		glUniform1ui(uniforms[UNIFORM_TEXTURED], 1);
 	} else {
 		glUniform1ui(uniforms[UNIFORM_TEXTURED], 0);
 		//clog << __func__ << ": No texture";
 	}
-
-	//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
-	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
-	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
 }
 
 GLuint Wavefront::loadTexture(const string &filename)

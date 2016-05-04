@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "global.h"
 
+#define CAMERA_MOVEMENT	0.2f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define CAMERA_ELEV	(2.f * PI / 180.f)
 #define CAMERA_ACCEL	0.2f
@@ -50,12 +51,26 @@ void Camera::keyCB(int key)
 		// Decrease the elevation of the camera (optional)
 		elevate(-CAMERA_ELEV);
 		return;
+#if 1
+	case GLFW_KEY_W:
+		pos += forward() * CAMERA_MOVEMENT;
+		return;
+	case GLFW_KEY_S:
+		pos += forward() * -CAMERA_MOVEMENT;
+		return;
+	case GLFW_KEY_D:
+		pos += right() * CAMERA_MOVEMENT;
+		return;
+	case GLFW_KEY_A:
+		pos += right() * -CAMERA_MOVEMENT;
+		return;
+#endif
 	}
 }
 
 void Camera::updateCB(float time)
 {
-	pos += direction() * speed * time;
+	pos += forward() * speed * time;
 }
 
 void Camera::backup()
@@ -101,5 +116,5 @@ void Camera::print()
 
 glm::mat4 Camera::view() const
 {
-	return lookAt(pos, pos + direction(), upward());
+	return lookAt(pos, pos + forward(), upward());
 }
