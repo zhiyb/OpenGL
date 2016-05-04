@@ -1,7 +1,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include <map>
+//#include <map>
+#include <unordered_map>
 #include <string>
 
 #include <GL/glew.h>
@@ -38,6 +39,19 @@ enum {
 };
 
 // Uniform locations
+#if 1
+#define UNIFORM_MVP		"mvpMatrix"
+#define UNIFORM_MODEL		"modelMatrix"
+#define UNIFORM_NORMAL		"normalMatrix"
+#define UNIFORM_AMBIENT		"ambient"
+#define UNIFORM_DIFFUSE		"diffuse"
+#define UNIFORM_SPECULAR	"specular"
+#define UNIFORM_SHININESS	"shininess"
+#define UNIFORM_VIEWER		"viewer"
+#define UNIFORM_LIGHT		"light"
+#define UNIFORM_COLOUR		"colour"
+#define UNIFORM_TEXTURED	"textured"
+#else
 enum {
 	UNIFORM_MVP = 0,
 	UNIFORM_MODEL,
@@ -52,6 +66,7 @@ enum {
 	UNIFORM_TEXTURED,
 	UNIFORM_COUNT
 };
+#endif
 
 // Attribuate locations
 enum {
@@ -71,9 +86,11 @@ enum {
 	TEXTURE_COUNT
 };
 
+typedef std::unordered_map<std::string, GLint> uniformMap;
 struct program_t {
 	// Uniform locations
-	GLint uniforms[UNIFORM_COUNT];
+	//GLint uniforms[UNIFORM_COUNT];
+	uniformMap uniforms;
 	GLuint id;
 };
 extern program_t programs[PROGRAM_COUNT];

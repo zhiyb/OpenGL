@@ -15,7 +15,7 @@ void Wavefront::useMaterial(const int i)
 	if (i == materialID)
 		return;
 
-	GLint *uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
+	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 	// Material properties
 	const material_t &material = materials.at(i);

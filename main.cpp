@@ -232,7 +232,7 @@ static void renderSkybox()
 	glDepthMask(GL_FALSE);
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_SKYBOX].id);
-	GLint *uniforms = programs[PROGRAM_SKYBOX].uniforms;
+	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
 
 	// Material properties
 	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.7f);
@@ -243,8 +243,8 @@ static void renderSkybox()
 	//matrix.model = mat4();
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+	//glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	//glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
 	skybox->bind();
@@ -262,7 +262,7 @@ static void render()
 
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
-	GLint *uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
+	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 #if 1
 	vec3 light(0.f, 0.f, 1.f);	// Light direction
@@ -533,24 +533,23 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 
 void setupUniforms(GLuint index)
 {
-	static const char *names[UNIFORM_COUNT] = {
-		[UNIFORM_MVP]		= "mvpMatrix",
-		[UNIFORM_MODEL]		= "modelMatrix",
-		[UNIFORM_NORMAL]	= "normalMatrix",
-		[UNIFORM_AMBIENT]	= "ambient",
-		[UNIFORM_DIFFUSE]	= "diffuse",
-		[UNIFORM_SPECULAR]	= "specular",
-		[UNIFORM_SHININESS]	= "shininess",
-		[UNIFORM_VIEWER]	= "viewer",
-		[UNIFORM_LIGHT]		= "light",
-		[UNIFORM_COLOUR]	= "colour",
-		[UNIFORM_TEXTURED]	= "textured",
-	};
 	GLuint program = programs[index].id;
 	if (!program)
 		return;
-	for (GLuint idx = 0; idx < UNIFORM_COUNT; idx++)
-		programs[index].uniforms[idx] = glGetUniformLocation(program, names[idx]);
+	GLint cnt;
+	glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &cnt);
+	//clog << __func__ << ": number of uniforms: " << cnt << endl;
+	char name[32];
+	uniformMap &uniforms = programs[index].uniforms;
+	for (GLint idx = 0; idx < cnt; idx++) {
+		GLsizei len;
+		GLint size;
+		GLenum type;
+		glGetActiveUniform(program, idx, sizeof(name), &len, &size, &type, name);
+		uniforms[name] = glGetUniformLocation(program, name);
+		//clog << name << '@' << uniforms[name] << ' ';
+	}
+	//clog << endl;
 }
 
 GLuint setupPrograms()
