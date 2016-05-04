@@ -4,7 +4,6 @@
 #include <map>
 #include <cstdlib>
 
-#include <btBulletDynamicsCommon.h>
 #include "world.h"
 
 #include "global.h"
@@ -16,6 +15,10 @@
 #include "cubeenclosed.h"
 #include "skybox.h"
 #include "wavefront.h"
+
+#ifdef BULLET
+#include <btBulletDynamicsCommon.h>
+#endif
 
 using namespace std;
 using namespace glm;

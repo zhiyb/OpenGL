@@ -12,7 +12,7 @@ CppApplication {
         libraries + "/glm",
         libraries + "/glew-1.13.0/include",
         libraries + "/glfw-3.1.2.bin.WIN32/include",
-        libraries + "/bullet3-2.83.7/src",
+        //libraries + "/bullet3-2.83.7/src",
     ]
     cpp.libraryPaths: [
         libraries + "/bullet3-2.83.7/bin",
@@ -21,7 +21,7 @@ CppApplication {
         libraries + "/glfw-3.1.2.bin.WIN32/lib-mingw-w64",
     ]
     cpp.linkerFlags: [
-        "-lBulletDynamics_gmake", "-lBulletCollision_gmake", "-lLinearMath_gmake",
+        //"-lBulletDynamics_gmake", "-lBulletCollision_gmake", "-lLinearMath_gmake",
         "-lglew32s",
         "-lglfw3", "-lgdi32", "-lopengl32",
     ]

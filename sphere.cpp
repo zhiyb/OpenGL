@@ -37,6 +37,7 @@ void Sphere::renderNormal()
 	glDrawElements(GL_LINES, offset.count.normalView, GL_UNSIGNED_INT, (void *)(offset.index.normalView * sizeof(GLuint)));
 }
 
+#ifdef BULLET
 btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform T)
 {
 	btCollisionShape* fallshape = new btSphereShape(scale);
@@ -51,6 +52,7 @@ btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform 
 	//fallRigidBody->getCollisionShape()->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
 	return fallRigidBody;
 }
+#endif
 
 void Sphere::addVertex(const vec3 &vertex)
 {

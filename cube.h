@@ -9,7 +9,9 @@ public:
 	Cube() {setup();}
 	void renderWireframe();
 	void render();
+#ifdef BULLET
 	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
+#endif
 
 protected:
 	void setup();

@@ -25,6 +25,7 @@ void Cube::render()
 		glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);
 }
 
+#ifdef BULLET
 btRigidBody *Cube::createRigidBody(btScalar mass, btScalar scale, btTransform T)
 {
 	btCollisionShape* fallshape = new btBoxShape(btVector3(scale, scale, scale));
@@ -39,6 +40,7 @@ btRigidBody *Cube::createRigidBody(btScalar mass, btScalar scale, btTransform T)
 	//fallRigidBody->getCollisionShape()->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
 	return fallRigidBody;
 }
+#endif
 
 void Cube::setupVertices()
 {
