@@ -16,6 +16,8 @@
 using namespace std;
 using namespace glm;
 
+Camera camera;
+
 Camera::Camera() : pos(CAMERA_INIT_POS), rot(quat()), speed(0.f)
 {
 	input.cursor = vec2(-1.f, -1.f);

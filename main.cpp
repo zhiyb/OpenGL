@@ -29,30 +29,9 @@ GLFWwindow *window;
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
-environment_t environment;
-
-Camera camera;
-
-static struct {
-	mat4 model, view, projection;
-	mat4 mvp;
-	mat3 normal;
-
-	struct {
-		quat rotation;
-	} world;
-
-	void update()
-	{
-		model = mat4_cast(world.rotation) * model;
-		mvp = projection * view * model;
-		normal = mat3(transpose(inverse(view * model)));
-	}
-} matrix;
-
 static struct Status {
 	bool run;
-	double animation;
+	double animation, pauseStart, pauseDuration;
 	enum {CameraMode, TourMode} mode;
 } status;
 
@@ -66,8 +45,6 @@ static struct Arena {
 #endif
 
 #ifndef MODELS
-Skybox *skybox;
-
 struct object_t {
 	bool culling;
 	vec3 scale, offset;
@@ -183,20 +160,21 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 void setupObjects()
 {
 #ifndef MODELS
-	skybox = new Skybox;
-	object_t obj;
-
 	ifstream datafs(DATA_PATH "/wavefront.txt");
+	if (!datafs) {
+		cerr << "Cannot open model description file " DATA_PATH "wavefront.txt" << endl;
+		return;
+	}
 	string line;
 	while (getline(datafs, line)) {
 		if (line.empty() || line.at(0) == '#')
 			continue;
 		istringstream ss(line);
 		string modelPath, mtlPath, texPath;
+		object_t obj;
 		ss >> modelPath >> mtlPath >> texPath;
 		ss >> obj.culling;
-		ss >> obj.scale.x >> obj.scale.y >> obj.scale.z;
-		ss >> obj.offset.x >> obj.offset.y >> obj.offset.z;
+		ss >> obj.scale >> obj.offset;
 		if (!ss)
 			continue;
 		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
@@ -248,39 +226,12 @@ void setupObjects()
 }
 
 #if !defined(MODELS) || !defined(BULLET)
-static void renderSkybox()
-{
-	glEnable(GL_CULL_FACE);
-	glDepthMask(GL_FALSE);
-	// Render solid objects
-	glUseProgram(programs[PROGRAM_SKYBOX].id);
-	checkError("switching to PROGRAM_SKYBOX");
-	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
-
-	// Material properties
-	vec3 brightness = environment.ambient + environment.light.intensity;
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&brightness);
-
-	// Render skybox
-	matrix.model = translate(mat4(), camera.position());
-	//matrix.model = mat4();
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
-	checkError("binding TEXTURE_SKYBOX");
-	skybox->bind();
-	skybox->render();
-	glDepthMask(GL_TRUE);
-}
-
 static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	matrix.view = camera.view();
-
-	renderSkybox();
+	environment.render();
 
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
@@ -479,11 +430,13 @@ void scene()
 void step()
 {
 	if (status.run) {
-		double time = glfwGetTime();
+		double time = glfwGetTime() - status.pauseDuration;
+		double diff = time - status.animation;
 #ifdef BULLET
-		dynamicsWorld->stepSimulation(time - animation, 100);
+		dynamicsWorld->stepSimulation(diff, 100);
 #endif
-		camera.updateCB(time - status.animation);
+		environment.update(time);
+		camera.updateCB(diff);
 		status.animation = time;
 	}
 }
@@ -533,9 +486,16 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	case GLFW_KEY_SPACE:
 		// Stop all motion (optional)
+		status.run = !status.run;
+		if (status.run)
+			status.pauseDuration += glfwGetTime() - status.pauseStart;
+		else
+			status.pauseStart = glfwGetTime();
 		return;
 	case GLFW_KEY_R:
 		// Reset all animation (optional)
+		status.pauseDuration = glfwGetTime();
+		status.run = true;
 		return;
 	case GLFW_KEY_P:
 		// Move to predefined location (screen shot)
@@ -583,7 +543,6 @@ void quit()
 
 	// Free memory
 #ifndef MODELS
-	delete skybox;
 	for (object_t &obj: objects)
 		delete obj.model;
 #else
@@ -660,11 +619,15 @@ int main(int /*argc*/, char */*argv*/[])
 	glEnable(GL_CULL_FACE);
 	checkError("enabling back face culling");
 #endif
-	//glEnable(GL_TEXTURE_2D);
+#ifdef ALPHA_BLEND
+	glEnable(GL_BLEND);
+	checkError("enabling alpha blending");
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif
+	glEnable(GL_TEXTURE_2D);
+	glGetError();	// Ignore the error
 	//checkError("enabling texture 2D");
 	//glEnable(GL_TEXTURE_CUBE_MAP);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (setupPrograms() || setupTextures()) {
 		glfwTerminate();
@@ -675,6 +638,8 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 #endif
 
+	environment.setup();
+	environment.load();
 	setupObjects();
 	status.run = true;
 	status.mode = Status::CameraMode;

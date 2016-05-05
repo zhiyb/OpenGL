@@ -1,6 +1,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include <iostream>
 #include "global.h"
 
 struct shader_t {
@@ -9,6 +10,8 @@ struct shader_t {
 };
 
 std::string basename(std::string &path);
+std::istream &operator>>(std::istream &stream, glm::vec3 &vec);
+std::istream &operator>>(std::istream &stream, glm::vec4 &vec);
 
 // delete[] after use!
 char *readFile(const char *path);

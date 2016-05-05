@@ -1,0 +1,14 @@
+# Environment parameters
+
+# Day time cycle (seconds): sunrise, daytime, sunset, night
+Day	2	5	2	5
+# Sunrise, colour components increasing speed
+Sunrise	2 1.1 1
+# Daytime, light intensity, ambient intensity
+Daytime	1 0.95 0.95	0.5 0.475 0.475
+# Sunset, colour components decreasing speed
+Sunset	1 1 1
+# Night, light intensity, ambient intensity
+Night	0 0 0	0.02 0.02 0.02
+# Sun, initial position, rotation axis, size, outer colour
+Sun	0.707 0 -0.707	0.707 0 0.707	0.08	1 0.97 0.75

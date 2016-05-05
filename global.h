@@ -23,6 +23,7 @@
 //#define MODELS
 #define TEXTURE_ALPHA
 #define CULL_FACE
+#define ALPHA_BLEND
 
 #ifdef BULLET
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
@@ -79,7 +80,8 @@ enum {
 // Textures
 enum {
 	TEXTURE_SPHERE,
-	TEXTURE_S2,
+	TEXTURE_FIREMAP,
+	TEXTURE_GLOW,
 	TEXTURE_CUBE,
 	TEXTURE_SKYBOX,
 	TEXTURE_DEBUG,

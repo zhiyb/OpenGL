@@ -1,4 +1,4 @@
-#version 400
+#version 330
 
 in vec3 position;
 uniform mat4 mvpMatrix;

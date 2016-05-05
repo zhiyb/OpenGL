@@ -30,7 +30,7 @@ void main(void)
 	colour += tex.rgb * cos_theta * lightIntensity;
 
 	cos_theta = max(dot(vertex.viewer, normal), 0.0);
-	colour += cos_theta * emission;
+	colour += emission * cos_theta * lightIntensity;
 
 	if (cos_theta != 0.0) {
 		vec3 ref = 2.0 * dot(light, normal) * normal - light;

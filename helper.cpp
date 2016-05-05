@@ -36,6 +36,16 @@ string basename(string &path)
 	return path;
 }
 
+istream &operator>>(istream &stream, glm::vec3 &vec)
+{
+	return stream >> vec.x >> vec.y >> vec.z;
+}
+
+istream &operator>>(istream &stream, glm::vec4 &vec)
+{
+	return stream >> vec.x >> vec.y >> vec.z >> vec.w;
+}
+
 char *readFile(const char *path)
 {
 	ifstream is;
@@ -229,7 +239,9 @@ GLuint setupTextures()
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
-		[TEXTURE_S2]		= {TEXTURE_PATH "firemap.png"},
+		[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
+		// glow1.png: http://vterrain.org/Atmosphere/
+		[TEXTURE_GLOW]		= {TEXTURE_PATH "glow1.png"},
 		// diamond_block.png: Minecraft
 		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
 		// skybox3.png: http://scmapdb.com/skybox:sky-blu

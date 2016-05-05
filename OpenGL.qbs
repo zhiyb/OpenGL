@@ -29,9 +29,9 @@ CppApplication {
     files: [
         "camera.*",
         "helper.*",
+        "world.*",
         "main.cpp",
         "global.h",
-        "world.h",
     ]
 
     Group {
@@ -44,6 +44,7 @@ CppApplication {
     Group {
         name: "Objects src"
         files: [
+            "circle.*",
             "cubeenclosed.*",
             "skybox.*",
             "sphere.*",
