@@ -21,13 +21,10 @@ void Wavefront::useMaterial(const int i)
 
 	// Material properties
 	const material_t &material = materials.at(i);
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.ambient);
-	//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
-	vec3 diffuse(material.diffuse[0], material.diffuse[1], material.diffuse[2]);
-	vec3 emission(material.emission[0], material.emission[1], material.emission[2]);
-	//diffuse = max(diffuse, emission);
-	//diffuse = diffuse + emission;
-	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, (GLfloat *)&diffuse);
+	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.light);
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
+	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
+	glUniform3fv(uniforms[UNIFORM_EMISSION], 1, material.emission);
 	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
 	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
 

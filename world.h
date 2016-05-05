@@ -10,8 +10,8 @@
 #define AMBIENT		glm::vec3(1.f, 0.95f, 0.95f)
 
 extern struct environment_t {
-	environment_t() : ambient(AMBIENT) {}
-	glm::vec3 ambient;
+	environment_t() : light(AMBIENT) {}
+	glm::vec3 light;
 } environment;
 
 #endif // WORLD_H

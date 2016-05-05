@@ -248,7 +248,7 @@ static void renderSkybox()
 	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
 
 	// Material properties
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.ambient);
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.light);
 
 	// Render skybox
 	matrix.model = translate(mat4(), camera.position());

@@ -58,10 +58,12 @@ enum {
 #define UNIFORM_AMBIENT		"ambient"
 #define UNIFORM_DIFFUSE		"diffuse"
 #define UNIFORM_SPECULAR	"specular"
+#define UNIFORM_EMISSION	"emission"
 #define UNIFORM_SHININESS	"shininess"
 #define UNIFORM_VIEWER		"viewer"
 #define UNIFORM_LIGHT		"light"
 #define UNIFORM_LIGHT_INTENSITY	"lightIntensity"
+#define UNIFORM_ENVIRONMENT	"environment"
 #define UNIFORM_COLOUR		"colour"
 #define UNIFORM_TEXTURED	"textured"
 

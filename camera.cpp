@@ -8,7 +8,7 @@
 #include "camera.h"
 #include "global.h"
 
-#define CAMERA_MOVEMENT	0.2f
+#define CAMERA_MOVEMENT	0.1f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define CAMERA_ELEV	(2.f * PI / 180.f)
 #define CAMERA_ACCEL	0.2f
@@ -70,10 +70,10 @@ void Camera::keyCB(int key)
 		pos += upward() * -CAMERA_MOVEMENT;
 		return;
 	case GLFW_KEY_COMMA:
-		rot = glm::rotate(rot, CAMERA_ROTATE, forward());
+		rot = glm::rotate(quat(), CAMERA_ROTATE, forward()) * rot;
 		return;
 	case GLFW_KEY_PERIOD:
-		rot = glm::rotate(rot, -CAMERA_ROTATE, forward());
+		rot = glm::rotate(quat(), -CAMERA_ROTATE, forward()) * rot;
 		return;
 #endif
 	}
