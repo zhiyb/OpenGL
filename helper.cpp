@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <map>
@@ -13,6 +14,27 @@
 //#define DEBUG_UNIFORMS
 
 using namespace std;
+
+string basename(string &path)
+{
+	string token;
+	{
+		istringstream iss(path);
+		while (getline(iss, token, '/'))
+			path = token;
+	}
+	{
+		istringstream iss(path);
+		while (getline(iss, token, '\\'))
+			path = token;
+	}
+	while (path.size() != 0 && isspace(path.at(0)))
+		path.erase(path.begin());
+	while (path.size() != 0 && isspace(path.at(path.size() - 1)))
+		path.erase(path.end() - 1);
+	//clog << __func__ << ": " << path << endl << token << endl;
+	return path;
+}
 
 char *readFile(const char *path)
 {
@@ -32,6 +54,16 @@ char *readFile(const char *path)
 	return buf;
 }
 
+bool checkError(const char *msg)
+{
+	GLenum err = glGetError();
+	if (err != GL_NO_ERROR) {
+		cerr << "Error (0x" << hex << err << dec << ") " << msg << endl;
+		return true;
+	}
+	return false;
+}
+
 GLuint setupShader(const GLenum type, const char *source)
 {
 	if (!source)
@@ -41,6 +73,7 @@ GLuint setupShader(const GLenum type, const char *source)
 	if (!sh)
 		return 0;
 	glShaderSource(sh, 1, &source, NULL);
+	checkError("uploading shader source");
 	glCompileShader(sh);
 
 	GLint i;
@@ -181,6 +214,7 @@ GLuint setupPrograms()
 		glBindAttribLocation(program, ATTRIB_POSITION, "position");
 		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
 		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texCoord");
+		checkError("binding attribuates");
 		if (setupProgramFromFiles(program, shaders[idx]) != 0)
 			return 2;
 		setupUniforms(idx);
@@ -194,7 +228,7 @@ GLuint setupTextures()
 		//GLenum type;
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
-		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.jpg"},
+		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
 		[TEXTURE_S2]		= {TEXTURE_PATH "firemap.png"},
 		// diamond_block.png: Minecraft
 		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
@@ -204,27 +238,54 @@ GLuint setupTextures()
 	};
 
 	//glActiveTexture(GL_TEXTURE0);
-	for (GLuint i = 0; i < TEXTURE_COUNT; i++) {
-		const textureInfo_t &info = textureInfo[i];
-		texture_t &tex = textures[i];
-		unsigned char *data = stbi_load(info.file, &tex.x, &tex.y, &tex.n, 3);
-		if (data == 0) {
-			cerr << "Error loading texture file " << info.file << endl;
-			return 1;
-		}
-		if (tex.n != 3) {
-			cerr << "Invalid image format from texture file " << info.file << endl;
-			stbi_image_free(data);
-			return 2;
-		}
-		//tex.type = info.type;
-		glGenTextures(1, &tex.texture);
-		glBindTexture(GL_TEXTURE_2D, tex.texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		stbi_image_free(data);
-	}
+	for (GLuint i = 0; i < TEXTURE_COUNT; i++)
+		textures[i] = loadTexture(textureInfo[i].file);
 
 	return 0;
+}
+
+texture_t loadTexture(const char *path)
+{
+#ifdef TEXTURE_ALPHA
+	const int channels = 4;
+#else
+	const int channels = 3;
+#endif
+	texture_t tex;
+	tex.texture = 0;
+	unsigned char *data = stbi_load(path, &tex.x, &tex.y, &tex.n, channels);
+	if (data == 0) {
+		cerr << "Error loading texture file " << path << endl;
+		return tex;
+	}
+	if (tex.n != channels) {
+		cerr << "Invalid image format from texture file " << path << endl;
+		stbi_image_free(data);
+		return tex;
+	}
+#ifdef WAVEFRONT_DEBUG
+	clog << __func__ << ": Texture file " << path << " loaded, " << tex.x << "x" << tex.y << "-" << tex.n << endl;
+#endif
+	glGenTextures(1, &tex.texture);
+	if (tex.texture == 0) {
+		cerr << "Cannot generate texture storage for " << path << endl;
+		stbi_image_free(data);
+		return tex;
+	}
+	glBindTexture(GL_TEXTURE_2D, tex.texture);
+	checkError((string("binding texture storage for ") + path).c_str());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	checkError((string("setting texture parameters for ") + path).c_str());
+#ifdef TEXTURE_ALPHA
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.x, tex.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+#else
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+#endif
+	stbi_image_free(data);
+	if (checkError((string("uploading texture from ") + path).c_str())) {
+		glDeleteTextures(1, &tex.texture);
+		tex.texture = 0;
+	}
+	return tex;
 }

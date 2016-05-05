@@ -27,11 +27,9 @@ CppApplication {
     ]
 
     files: [
-        "camera.cpp",
-        "camera.h",
+        "camera.*",
+        "helper.*",
         "main.cpp",
-        "helper.cpp",
-        "helper.h",
         "global.h",
         "world.h",
     ]
@@ -46,10 +44,8 @@ CppApplication {
     Group {
         name: "Objects src"
         files: [
-            "cubeenclosed.cpp",
-            "cubeenclosed.h",
-            "skybox.cpp",
-            "skybox.h",
+            "cubeenclosed.*",
+            "skybox.*",
             "sphere.*",
             "object.*",
             "cube.*",
@@ -83,6 +79,7 @@ CppApplication {
         files: [
             "config.lua",
             "README.md",
+            "data/**",
         ]
     }
 

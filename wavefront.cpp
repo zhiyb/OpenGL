@@ -5,6 +5,7 @@
 #include <stb_image.h>
 #include "world.h"
 #include "global.h"
+#include "helper.h"
 #include "wavefront.h"
 
 //#define WAVEFRONT_DEBUG
@@ -21,7 +22,7 @@ void Wavefront::useMaterial(const int i)
 
 	// Material properties
 	const material_t &material = materials.at(i);
-	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.light);
+	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
 	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
 	glUniform3fv(uniforms[UNIFORM_EMISSION], 1, material.emission);
@@ -37,57 +38,6 @@ void Wavefront::useMaterial(const int i)
 	}
 }
 
-GLuint Wavefront::loadTexture(const string &filename)
-{
-	string path = texDir + filename;
-	texture_t tex;
-	unsigned char *data = stbi_load(path.c_str(), &tex.x, &tex.y, &tex.n, 4);
-	if (data == 0) {
-		cerr << "Error loading texture file " << path << endl;
-		return 0;
-	}
-	if (tex.n != 4) {
-		cerr << "Invalid image format from texture file " << path << endl;
-		stbi_image_free(data);
-		return 0;
-	}
-#ifdef WAVEFRONT_DEBUG
-	clog << __func__ << ": Texture file " << path << " loaded, " << tex.x << "x" << tex.y << "-" << tex.n << endl;
-#endif
-	glGenTextures(1, &tex.texture);
-	if (tex.texture == 0) {
-		cerr << "Cannot generate texture storage for " << path << endl;
-		stbi_image_free(data);
-		return 0;
-	}
-	glBindTexture(GL_TEXTURE_2D, tex.texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex.x, tex.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	stbi_image_free(data);
-	return tex.texture;
-}
-
-void Wavefront::basename(string &path)
-{
-	string token;
-	{
-		istringstream iss(path);
-		while (getline(iss, token, '/'))
-			path = token;
-	}
-	{
-		istringstream iss(path);
-		while (getline(iss, token, '\\'))
-			path = token;
-	}
-	while (path.size() != 0 && isspace(path.at(0)))
-		path.erase(path.begin());
-	while (path.size() != 0 && isspace(path.at(path.size() - 1)))
-		path.erase(path.end() - 1);
-	//clog << __func__ << ": " << path << endl << token << endl;
-}
-
 void Wavefront::render()
 {
 	if (!loaded)
@@ -96,7 +46,7 @@ void Wavefront::render()
 	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
 		glBindVertexArray(vaos[shapeID]);
-#if 1
+		checkError("Wavefront: binding vertex array");
 		const mesh_t &mesh = shape.mesh;
 		if (mesh.indices.size() < 3)
 			continue;
@@ -114,10 +64,6 @@ void Wavefront::render()
 		}
 		useMaterial(mtl);
 		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
-#else
-		useMaterial(shape.mesh.material_ids.at(0));
-		glDrawElements(GL_TRIANGLES, shape.mesh.indices.size(), GL_UNSIGNED_INT, 0);
-#endif
 		shapeID++;
 	}
 }
@@ -138,22 +84,20 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 	for (material_t &material: materials) {
 		if (!material.diffuse_texname.empty()) {
 			string &texname = material.diffuse_texname;
-			basename(texname);
+			texname = basename(texname);
 			if (textures.find(texname) == textures.end())
-				textures[texname] = loadTexture(texname);
+				textures[texname] = loadTexture((texDir + texname).c_str()).texture;
 		}
 	}
-	loaded = true;
 
 	GLuint vaos[shapes.size()];
 	glGenVertexArrays(shapes.size(), vaos);
+	checkError("Wavefront: generating vertex array objects");
 	this->vaos = std::vector<GLuint>(vaos, vaos + shapes.size());
 
 	unsigned int i = 0;
 	for (const shape_t &shape: shapes) {
-#ifdef WAVEFRONT_DEBUG
 		//clog << "Generating VAO for shape " << shape.name << endl;
-#endif
 		const mesh_t &mesh = shape.mesh;
 		glBindVertexArray(vaos[i]);
 
@@ -163,28 +107,36 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 		//clog << "\tstep: positions" << endl;
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
 		glBufferData(GL_ARRAY_BUFFER, mesh.positions.size() * sizeof(float), mesh.positions.data(), GL_STATIC_DRAW);
+		if (checkError("Wavefront: uploading vertices"))
+			return;
 		glEnableVertexAttribArray(ATTRIB_POSITION);
 		glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 		//clog << "\tstep: normals" << endl;
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[1]);
 		glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(float), mesh.normals.data(), GL_STATIC_DRAW);
+		if (checkError("Wavefront: uploading normals"))
+			return;
 		glEnableVertexAttribArray(ATTRIB_NORMAL);
 		glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
 		glBufferData(GL_ARRAY_BUFFER, mesh.texcoords.size() * sizeof(float), mesh.texcoords.data(), GL_STATIC_DRAW);
+		if (checkError("Wavefront: uploading texture coordinates"))
+			return;
 		glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 		glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 		//clog << "\tstep: indices" << endl;
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+		if (checkError("Wavefront: uploading indices"))
+			return;
 		i++;
 	}
+	loaded = true;
 }
 
-#ifdef WAVEFRONT_DEBUG
 void Wavefront::debugPrint()
 {
 	clog << __PRETTY_FUNCTION__ << endl;
@@ -204,26 +156,6 @@ void Wavefront::debugPrint()
 		clog << "\tsizeof num_vertices: " << shape.mesh.num_vertices.size() << endl;
 		clog << "\tsizeof material_ids: " << shape.mesh.material_ids.size() << endl;
 		clog << "\tsizeof tags: " << shape.mesh.tags.size() << endl;
-#if 0
-		clog << "Indices: ";
-		for (int id: shape.mesh.indices) {
-			clog << id << ", ";
-		}
-		clog << endl;
-#endif
-#if 0
-		bool diff = false;
-		int previd = -1;
-		for (int id: shape.mesh.material_ids) {
-			if (previd == -1)
-				previd = id;
-			else if (id != previd)
-				diff = true;
-		}
-
-		if (diff)
-			clog << "Different materials in this shape!" << endl;
-#endif
 	}
 	for (const material_t &material: materials) {
 		clog << "M: " << material.name << endl;
@@ -269,5 +201,15 @@ void Wavefront::debugPrint()
 		// 	Reflection: Ray trace off
 		// 10 Casts shadows onto invisible surfaces
 	}
+}
+
+#if 0
+GLInstanceGraphicsShape* LoadMeshFromObj(const char* relativeFileName, const char* materialPrefixPath)
+{
+	std::vector<tinyobj::shape_t> shapes;
+	std::string err = tinyobj::LoadObj(shapes, relativeFileName, materialPrefixPath);
+
+	GLInstanceGraphicsShape* gfxShape = btgCreateGraphicsShapeFromWavefrontObj(shapes);
+	return gfxShape;
 }
 #endif

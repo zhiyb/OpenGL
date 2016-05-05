@@ -21,8 +21,6 @@ protected:
 
 private:
 	void useMaterial(const int i);
-	GLuint loadTexture(const std::string &filename);
-	void basename(std::string &path);
 	void debugPrint();
 
 	bool loaded;

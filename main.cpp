@@ -52,6 +52,7 @@ static struct {
 
 static struct Status {
 	bool run;
+	double animation;
 	enum {CameraMode, TourMode} mode;
 } status;
 
@@ -68,6 +69,7 @@ static struct Arena {
 Skybox *skybox;
 
 struct object_t {
+	bool culling;
 	vec3 scale, offset;
 	Object *model;
 };
@@ -192,6 +194,7 @@ void setupObjects()
 		istringstream ss(line);
 		string modelPath, mtlPath, texPath;
 		ss >> modelPath >> mtlPath >> texPath;
+		ss >> obj.culling;
 		ss >> obj.scale.x >> obj.scale.y >> obj.scale.z;
 		ss >> obj.offset.x >> obj.offset.y >> obj.offset.z;
 		if (!ss)
@@ -247,13 +250,16 @@ void setupObjects()
 #if !defined(MODELS) || !defined(BULLET)
 static void renderSkybox()
 {
+	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_SKYBOX].id);
+	checkError("switching to PROGRAM_SKYBOX");
 	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
 
 	// Material properties
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.light);
+	vec3 brightness = environment.ambient + environment.light.intensity;
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&brightness);
 
 	// Render skybox
 	matrix.model = translate(mat4(), camera.position());
@@ -262,6 +268,7 @@ static void renderSkybox()
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
+	checkError("binding TEXTURE_SKYBOX");
 	skybox->bind();
 	skybox->render();
 	glDepthMask(GL_TRUE);
@@ -277,13 +284,12 @@ static void render()
 
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
+	checkError("switching to PROGRAM_WAVEFRONT");
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
-	vec3 light(0.f, 0.f, 1.f);		// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
+	vec3 light = vec3(transpose(inverse(matrix.view)) * vec4(environment.light.direction, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 intensity(0.3f, 0.2f, 0.2f);	// Light intensity
-	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&intensity);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
 
@@ -296,6 +302,10 @@ static void render()
 		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
+		if (obj.culling)
+			glEnable(GL_CULL_FACE);
+		else
+			glDisable(GL_CULL_FACE);
 		obj.model->bind();
 		obj.model->render();
 	}
@@ -466,6 +476,18 @@ void scene()
 }
 #endif
 
+void step()
+{
+	if (status.run) {
+		double time = glfwGetTime();
+#ifdef BULLET
+		dynamicsWorld->stepSimulation(time - animation, 100);
+#endif
+		camera.updateCB(time - status.animation);
+		status.animation = time;
+	}
+}
+
 void tour(const bool e)
 {
 }
@@ -477,7 +499,7 @@ static void refreshCB(GLFWwindow *window)
 	glViewport(0, 0, width, height);
 	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.f);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 1000.f);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -631,17 +653,23 @@ int main(int /*argc*/, char */*argv*/[])
 		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
 #endif
 
+	checkError("initialisation");
+	glEnable(GL_DEPTH_TEST);
+	checkError("enabling depth test");
+#ifdef CULL_FACE
+	glEnable(GL_CULL_FACE);
+	checkError("enabling back face culling");
+#endif
+	//glEnable(GL_TEXTURE_2D);
+	//checkError("enabling texture 2D");
+	//glEnable(GL_TEXTURE_CUBE_MAP);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	if (setupPrograms() || setupTextures()) {
 		glfwTerminate();
 		return -1;
 	}
-
-	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
-	glEnable(GL_TEXTURE_2D);
-	//glEnable(GL_TEXTURE_CUBE_MAP);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifdef BULLET
 	bulletInit();
@@ -657,21 +685,13 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwSetCursorPosCallback(window, cursorCB);
 	refreshCB(window);
 
-	float past = glfwGetTime();
-	double animation = glfwGetTime();
+	float past = status.animation = glfwGetTime();
 	unsigned int count = 0;
 	while (!glfwWindowShouldClose(window)) {
 		render();
 
 		// Step simulation
-		if (status.run) {
-			double time = glfwGetTime();
-#ifdef BULLET
-			dynamicsWorld->stepSimulation(time - animation, 100);
-#endif
-			camera.updateCB(time - animation);
-			animation = time;
-		}
+		step();
 
 		// FPS counter
 		count++;

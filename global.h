@@ -21,6 +21,8 @@
 
 //#define BULLET
 //#define MODELS
+#define TEXTURE_ALPHA
+#define CULL_FACE
 
 #ifdef BULLET
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
