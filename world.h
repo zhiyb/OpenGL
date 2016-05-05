@@ -7,10 +7,10 @@
 #define RESTITUTION	1.f
 #define FRICTION	0.1f
 
-#define AMBIENT		0.8f
+#define AMBIENT		glm::vec3(1.f, 0.95f, 0.95f)
 
 extern struct environment_t {
-	environment_t() : ambient(AMBIENT, AMBIENT, AMBIENT) {}
+	environment_t() : ambient(AMBIENT) {}
 	glm::vec3 ambient;
 } environment;
 

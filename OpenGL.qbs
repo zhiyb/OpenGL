@@ -74,13 +74,7 @@ CppApplication {
     Group {
         name: "Models"
         files: [
-            "models/simple.mtl",
-            "models/simple.obj",
-            "models/nanoMiku/nanoMiku.mtl",
-            "models/nanoMiku/nanoMiku.obj",
-            "models/arena/arena_01.mtl",
-            "models/arena/arena_01.obj",
-            "models/nanoMiku/tex1.png",
+            "models/**",
         ]
     }
 

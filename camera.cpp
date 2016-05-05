@@ -99,6 +99,8 @@ void Camera::cursorCB(double xpos, double ypos)
 	if (!input.pressed)
 		return;
 	vec2 pos(xpos, ypos);
+	if (input.cursor == pos)
+		return;
 	if (input.cursor.x >= 0 && input.cursor.y >= 0) {
 		vec2 move(vec2(1.f, -1.f) * (input.cursor - pos));
 		vec3 axis(cross(vec3(move, 0.f), vec3(0.f, 0.f, 1.f)));

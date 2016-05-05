@@ -26,10 +26,15 @@
 #else
 #define CAMERA_INIT_POS	glm::vec3(0.f, 1.f, 1.f + 3.f)
 #endif
-#define CAMERA_V0_POS	glm::vec3(-1.78653, 0.990645, 1.56153)
-#define CAMERA_V0_ROT	glm::quat(0.93955, 0.0159436, -0.341968, 0.00709854)
+// P
+//#define CAMERA_V0_POS	glm::vec3(-1.78653, 0.990645, 1.56153)
+//#define CAMERA_V0_ROT	glm::quat(0.93955, 0.0159436, -0.341968, 0.00709854)
+#define CAMERA_V0_POS	glm::vec3(-3.30448, 4.24575, 1.883)
+#define CAMERA_V0_ROT	glm::quat(0.833449, -0.247321, -0.47099, -0.14956)
+// L
 #define CAMERA_V1_POS	glm::vec3(0, 1.00613, 2.41957)
 #define CAMERA_V1_ROT	glm::quat(0.999848, 0.0174524, 0, 0)
+// O
 #define CAMERA_V2_POS	glm::vec3(0, 3.06334, 1.30881)
 #define CAMERA_V2_ROT	glm::quat(0.920509, -0.390733, 0, 0)
 

@@ -1,0 +1,587 @@
+# Blender MTL File: 'model.blend'
+# Material Count: 53
+
+newmtl material.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture.png
+
+newmtl material_0.004
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_0.png
+
+newmtl material_1.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_1.png
+
+newmtl material_11.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_10.png
+
+newmtl material_12.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_10.png
+
+newmtl material_13.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.890196 0.882353 0.870588
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+
+newmtl material_14.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.545098 0.533333 0.603922
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+
+newmtl material_15.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_6.png
+
+newmtl material_17.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_3.png
+
+newmtl material_19.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_12.png
+
+newmtl material_2.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_2.png
+
+newmtl material_27.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_18.png
+
+newmtl material_28.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_19.png
+
+newmtl material_29.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_0.png
+
+newmtl material_3.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_3.png
+
+newmtl material_30.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_20.png
+
+newmtl material_31.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_21.png
+
+newmtl material_32.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_22.png
+
+newmtl material_33.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_23.png
+
+newmtl material_34.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_2.png
+
+newmtl material_35.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_24.png
+
+newmtl material_36.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_25.png
+
+newmtl material_37.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_26.png
+
+newmtl material_38.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_27.png
+
+newmtl material_39.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_26.png
+
+newmtl material_4.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_4.png
+
+newmtl material_40.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 0.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_28.png
+map_d  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_28.png
+
+newmtl material_41.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 0.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_29.png
+map_d  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_29.png
+
+newmtl material_42.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_30.png
+
+newmtl material_43.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_31.png
+
+newmtl material_44.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_32.png
+
+newmtl material_45.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_9.png
+
+newmtl material_46.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_33.png
+
+newmtl material_47.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_34.png
+
+newmtl material_48.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_35.png
+
+newmtl material_49.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_31.png
+
+newmtl material_5.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 0.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_5.png
+map_d  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_5.png
+
+newmtl material_50.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_36.png
+
+newmtl material_51.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_37.png
+
+newmtl material_52.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_38.png
+
+newmtl material_53.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_39.png
+
+newmtl material_54.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_40.png
+
+newmtl material_55.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 0.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_41.png
+map_d  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_41.png
+
+newmtl material_56.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_42.png
+
+newmtl material_57.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_43.png
+
+newmtl material_58.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_44.png
+
+newmtl material_59.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_45.png
+
+newmtl material_60.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_46.png
+
+newmtl material_61.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_47.png
+
+newmtl material_62.001
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_34.png
+
+newmtl material_7.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_7.png
+
+newmtl material_8.006
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture.png
+
+newmtl material_9.002
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni -1.000000
+d 1.000000
+illum 2
+map_Kd  C:\\Users\\zhiyb\\Documents\\Design\\blender\\Assets\\cgtrader.com\\Dunwell Woodfield stadium\\sketchup\\models\\untitled\\texture_8.png

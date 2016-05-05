@@ -65,8 +65,12 @@ static struct Arena {
 
 #ifndef MODELS
 Skybox *skybox;
-//Object *object;
-vector<Object *> objects;
+
+struct object_t {
+	vec3 scale, offset;
+	Object *model;
+};
+vector<object_t> objects;
 #else
 struct Model {
 	struct Data {
@@ -177,9 +181,27 @@ void setupVertices()
 {
 #ifndef MODELS
 	skybox = new Skybox;
+	object_t obj;
+
+	obj.model = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
+	obj.scale = vec3(0.1f, 0.1f, 0.1f);
+	obj.offset = vec3(0.f);
+	objects.push_back(obj);
+
+	obj.model = new Wavefront("models/miku/model.obj", "models/miku/", "models/miku/textures/");
+	obj.scale = vec3(0.2f, 0.2f, 0.2f);
+	obj.offset = vec3(0.2f, 0.f, 0.f);
+	objects.push_back(obj);
+
+	obj.model = new Wavefront("models/Dunwell/model.obj", "models/Dunwell/", "models/Dunwell/model/");
+	obj.scale = vec3(1.f, 1.f, 1.f);
+	obj.offset = vec3(0.f, 0.f, 0.01f);
+	objects.push_back(obj);
+
 	//object = new Wavefront("models/simple.obj", "models/", "models/");
-	objects.push_back(new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/"));
-	objects.push_back(new Wavefront("models/arena/arena_01.obj", "models/arena/", "models/arena/textures/"));
+	//objects.push_back(new Wavefront("models/arena/model.obj", "models/arena/", "models/arena/"));
+	//objects.push_back(new Wavefront("models/ricoh/3d-model.obj", "models/ricoh/", "models/ricoh/3d-model/"));
+	//objects.push_back(new Wavefront("models/2012/model.obj", "models/2012/", "models/2012/model/"));
 #else
 	Model *model;
 
@@ -255,21 +277,22 @@ static void render()
 	vec3 light(0.f, 0.f, 1.f);		// Light direction
 	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
 	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 intensity(0.5f, 0.3f, 0.2f);	// Light intensity
+	vec3 intensity(0.3f, 0.2f, 0.2f);	// Light intensity
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&intensity);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
 
 #ifndef MODELS
-	matrix.model = mat4();
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+	for (object_t &obj: objects) {
+		matrix.model = translate(mat4(), obj.offset);
+		matrix.model = scale(matrix.model, obj.scale);
+		matrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	for (Object *object: objects) {
-		object->bind();
-		object->render();
+		obj.model->bind();
+		obj.model->render();
 	}
 #else
 	for (Model *model: models) {
@@ -522,7 +545,7 @@ void mouseCB(GLFWwindow */*window*/, int button, int action, int /*mods*/)
 	camera.mouseCB(button, action);
 }
 
-void cursorCB(GLFWwindow *window, double xpos, double ypos)
+void cursorCB(GLFWwindow */*window*/, double xpos, double ypos)
 {
 	camera.cursorCB(xpos, ypos);
 }
@@ -534,8 +557,8 @@ void quit()
 	// Free memory
 #ifndef MODELS
 	delete skybox;
-	for (Object *object: objects)
-		delete object;
+	for (object_t &obj: objects)
+		delete obj.model;
 #else
 	for (Model *model: models) {
 #ifdef BULLET
@@ -612,8 +635,8 @@ int main(int /*argc*/, char */*argv*/[])
 	//glEnable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_TEXTURE_CUBE_MAP);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifdef BULLET
 	bulletInit();

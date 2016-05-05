@@ -23,7 +23,11 @@ void Wavefront::useMaterial(const int i)
 	const material_t &material = materials.at(i);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&environment.ambient);
 	//glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
-	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
+	vec3 diffuse(material.diffuse[0], material.diffuse[1], material.diffuse[2]);
+	vec3 emission(material.emission[0], material.emission[1], material.emission[2]);
+	//diffuse = max(diffuse, emission);
+	//diffuse = diffuse + emission;
+	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, (GLfloat *)&diffuse);
 	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
 	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
 
@@ -122,6 +126,9 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 		cerr << "Unable to load wavefront file " << file << ":" << endl;
 		cerr << err << endl;
 	}
+#ifdef WAVEFRONT_DEBUG
+	debugPrint();
+#endif
 	this->texDir = texDir;
 	for (material_t &material: materials) {
 		if (!material.diffuse_texname.empty()) {
@@ -131,9 +138,6 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 				textures[texname] = loadTexture(texname);
 		}
 	}
-#ifdef WAVEFRONT_DEBUG
-	debugPrint();
-#endif
 
 	GLuint vaos[shapes.size()];
 	glGenVertexArrays(shapes.size(), vaos);
@@ -142,7 +146,7 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 	unsigned int i = 0;
 	for (const shape_t &shape: shapes) {
 #ifdef WAVEFRONT_DEBUG
-		clog << "Generating VAO for shape " << shape.name << endl;
+		//clog << "Generating VAO for shape " << shape.name << endl;
 #endif
 		const mesh_t &mesh = shape.mesh;
 		glBindVertexArray(vaos[i]);
@@ -194,7 +198,6 @@ void Wavefront::debugPrint()
 		clog << "\tsizeof num_vertices: " << shape.mesh.num_vertices.size() << endl;
 		clog << "\tsizeof material_ids: " << shape.mesh.material_ids.size() << endl;
 		clog << "\tsizeof tags: " << shape.mesh.tags.size() << endl;
-
 #if 0
 		clog << "Indices: ";
 		for (int id: shape.mesh.indices) {
@@ -202,7 +205,7 @@ void Wavefront::debugPrint()
 		}
 		clog << endl;
 #endif
-
+#if 0
 		bool diff = false;
 		int previd = -1;
 		for (int id: shape.mesh.material_ids) {
@@ -214,6 +217,7 @@ void Wavefront::debugPrint()
 
 		if (diff)
 			clog << "Different materials in this shape!" << endl;
+#endif
 	}
 	for (const material_t &material: materials) {
 		clog << "M: " << material.name << endl;
