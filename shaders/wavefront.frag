@@ -19,15 +19,17 @@ void main(void)
 	vec4 tex = vec4(diffuse, 1.0);
 	if (textured != 0)
 		tex *= texture(sampler, vertex.texCoord);
+	if (tex.a < 0.5)
+		discard;
+	else
+		tex.a = 1.0;
 
 	vec3 colour = tex.rgb * ambient * environment;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	//cos_theta = 1.f;
 	colour += tex.rgb * cos_theta * lightIntensity;
 
 	cos_theta = max(dot(vertex.viewer, normal), 0.0);
-	//cos_theta = 1.f;
 	colour += cos_theta * emission;
 
 	if (cos_theta != 0.0) {
