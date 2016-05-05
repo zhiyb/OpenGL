@@ -27,16 +27,14 @@
 #define CAMERA_INIT_POS	glm::vec3(0.f, 1.f, 1.f + 3.f)
 #endif
 // P
-//#define CAMERA_V0_POS	glm::vec3(-1.78653, 0.990645, 1.56153)
-//#define CAMERA_V0_ROT	glm::quat(0.93955, 0.0159436, -0.341968, 0.00709854)
-#define CAMERA_V0_POS	glm::vec3(-3.30448, 4.24575, 1.883)
-#define CAMERA_V0_ROT	glm::quat(0.833449, -0.247321, -0.47099, -0.14956)
+#define CAMERA_V0_POS	glm::vec3(-0.266186, 0.207137, 0.350882)
+#define CAMERA_V0_ROT	glm::quat(0.864666, -0.0412326, -0.50014, -0.0227479)
 // L
-#define CAMERA_V1_POS	glm::vec3(0, 1.00613, 2.41957)
-#define CAMERA_V1_ROT	glm::quat(0.999848, 0.0174524, 0, 0)
+#define CAMERA_V1_POS	glm::vec3(0.0984262, 0.172868, 0.316164)
+#define CAMERA_V1_ROT	glm::quat(0.999475, -0.0323378, 0.00195828, 0.000608202)
 // O
-#define CAMERA_V2_POS	glm::vec3(0, 3.06334, 1.30881)
-#define CAMERA_V2_ROT	glm::quat(0.920509, -0.390733, 0, 0)
+#define CAMERA_V2_POS	glm::vec3(-5.97896, 8.86862, 3.46077)
+#define CAMERA_V2_ROT	glm::quat(0.715113, -0.369985, -0.488345, -0.336535)
 
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
 #define PI		(glm::pi<GLfloat>())
