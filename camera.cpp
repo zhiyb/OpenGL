@@ -8,7 +8,7 @@
 #include "camera.h"
 #include "global.h"
 
-#define CAMERA_MOVEMENT	0.1f
+#define CAMERA_MOVEMENT	0.02f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define CAMERA_ELEV	(2.f * PI / 180.f)
 #define CAMERA_ACCEL	0.2f

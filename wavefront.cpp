@@ -7,7 +7,7 @@
 #include "global.h"
 #include "wavefront.h"
 
-#define WAVEFRONT_DEBUG
+//#define WAVEFRONT_DEBUG
 
 using namespace std;
 using namespace glm;
@@ -81,11 +81,17 @@ void Wavefront::basename(string &path)
 		while (getline(iss, token, '\\'))
 			path = token;
 	}
+	while (path.size() != 0 && isspace(path.at(0)))
+		path.erase(path.begin());
+	while (path.size() != 0 && isspace(path.at(path.size() - 1)))
+		path.erase(path.end() - 1);
 	//clog << __func__ << ": " << path << endl << token << endl;
 }
 
 void Wavefront::render()
 {
+	if (!loaded)
+		return;
 	materialID = -1;
 	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
@@ -118,10 +124,12 @@ void Wavefront::render()
 
 void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 {
+	loaded = false;
 	std::string err;
 	if (!LoadObj(shapes, materials, err, file, mtlDir)) {
 		cerr << "Unable to load wavefront file " << file << ":" << endl;
 		cerr << err << endl;
+		return;
 	}
 #ifdef WAVEFRONT_DEBUG
 	debugPrint();
@@ -135,6 +143,7 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 				textures[texname] = loadTexture(texname);
 		}
 	}
+	loaded = true;
 
 	GLuint vaos[shapes.size()];
 	glGenVertexArrays(shapes.size(), vaos);

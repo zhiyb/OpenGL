@@ -1,6 +1,7 @@
 #include <iostream>
-#include <vector>
 #include <fstream>
+#include <sstream>
+#include <vector>
 #include <map>
 #include <cstdlib>
 
@@ -177,31 +178,35 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 }
 #endif
 
-void setupVertices()
+void setupObjects()
 {
 #ifndef MODELS
 	skybox = new Skybox;
 	object_t obj;
 
-	obj.model = new Wavefront("models/nanoMiku/nanoMiku.obj", "models/nanoMiku/", "models/nanoMiku/");
-	obj.scale = vec3(0.1f, 0.1f, 0.1f);
-	obj.offset = vec3(0.f);
-	objects.push_back(obj);
-
-	obj.model = new Wavefront("models/miku/model.obj", "models/miku/", "models/miku/textures/");
-	obj.scale = vec3(0.2f, 0.2f, 0.2f);
-	obj.offset = vec3(0.2f, 0.f, 0.f);
-	objects.push_back(obj);
-
-	obj.model = new Wavefront("models/Dunwell/model.obj", "models/Dunwell/", "models/Dunwell/model/");
-	obj.scale = vec3(1.f, 1.f, 1.f);
-	obj.offset = vec3(0.f, 0.f, 0.01f);
-	objects.push_back(obj);
-
-	//object = new Wavefront("models/simple.obj", "models/", "models/");
-	//objects.push_back(new Wavefront("models/arena/model.obj", "models/arena/", "models/arena/"));
-	//objects.push_back(new Wavefront("models/ricoh/3d-model.obj", "models/ricoh/", "models/ricoh/3d-model/"));
-	//objects.push_back(new Wavefront("models/2012/model.obj", "models/2012/", "models/2012/model/"));
+	ifstream datafs(DATA_PATH "/wavefront.txt");
+	string line;
+	while (getline(datafs, line)) {
+		if (line.empty() || line.at(0) == '#')
+			continue;
+		istringstream ss(line);
+		string modelPath, mtlPath, texPath;
+		ss >> modelPath >> mtlPath >> texPath;
+		ss >> obj.scale.x >> obj.scale.y >> obj.scale.z;
+		ss >> obj.offset.x >> obj.offset.y >> obj.offset.z;
+		if (!ss)
+			continue;
+		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
+		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
+		if (!model)
+			continue;
+		if (!model->isValid()) {
+			delete model;
+			continue;
+		}
+		obj.model = model;
+		objects.push_back(obj);
+	}
 #else
 	Model *model;
 
@@ -642,7 +647,7 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 #endif
 
-	setupVertices();
+	setupObjects();
 	status.run = true;
 	status.mode = Status::CameraMode;
 

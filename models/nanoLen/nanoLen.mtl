@@ -1,7 +1,7 @@
-# Blender MTL File: 'nanoMiku.blend'
+# Blender MTL File: 'None'
 # Material Count: 3
 
-newmtl 材質1.002
+newmtl 材質1
 Ns 96.078431
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -10,10 +10,10 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd  tex1.png
-map_d  tex1.png
+map_Kd tex1.png
+map_d tex1.png
 
-newmtl 材質2.002
+newmtl 材質2
 Ns 96.078431
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -22,10 +22,10 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd  tex1.png
-map_d  tex1.png
+map_Kd tex1.png
+map_d tex1.png
 
-newmtl 材質3.002
+newmtl 材質3
 Ns 96.078431
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -34,5 +34,5 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd  tex1.png
-map_d  tex1.png
+map_Kd tex1.png
+map_d tex1.png

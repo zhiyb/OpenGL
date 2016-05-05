@@ -10,7 +10,8 @@ class Wavefront : public Object
 {
 public:
 	Wavefront(const char *file, const char *mtlDir, const char *texDir) {setup(file, mtlDir, texDir);}
-	void bind() {}	// It needs multiple VAOs
+	bool isValid() const {return loaded;}
+	void bind() {}	// It needs multiple VAOs, binding during rendering
 	//void renderWireframe();
 	void render();
 	//btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
@@ -24,6 +25,7 @@ private:
 	void basename(std::string &path);
 	void debugPrint();
 
+	bool loaded;
 	int materialID;
 	std::string texDir;
 	std::vector<GLuint> vaos;

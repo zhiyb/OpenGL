@@ -1,0 +1,18 @@
+# Model path, material path, texture path, vec3 scale, vec3 offset
+
+# https://www.cgtrader.com/free-3d-models/architectural-exterior/arena-stadium/dunwell-woodfield-stadium--2
+models/Dunwell/model.obj models/Dunwell/ models/Dunwell/model/	1 1 1	0 0 0.01
+
+# http://kiomodel3.sblo.jp/article/23486819.html
+models/miku/model.obj models/miku/ models/miku/textures/ 0.2 0.2 0.2	0.2 0 0
+
+# http://mqdl.jpn.org/public
+models/nanoMiku/nanoMiku.obj models/nanoMiku/ models/nanoMiku/	0.1 0.1 0.1	0 0 0
+models/nanoRin/nanoRin.obj models/nanoRin/ models/nanoRin/	0.1 0.1 0.1	-0.2 0 0
+models/nanoLen/nanoLen.obj models/nanoLen/ models/nanoLen/	0.1 0.1 0.1	-0.4 0 0
+models/nanoGUMI/nanoGUMI.obj models/nanoGUMI/ models/nanoGUMI/	0.1 0.1 0.1	-0.6 0 0
+
+#object = new Wavefront("models/simple.obj", "models/", "models/");
+#objects.push_back(new Wavefront("models/arena/model.obj", "models/arena/", "models/arena/"));
+#objects.push_back(new Wavefront("models/ricoh/3d-model.obj", "models/ricoh/", "models/ricoh/3d-model/"));
+#objects.push_back(new Wavefront("models/2012/model.obj", "models/2012/", "models/2012/model/"));

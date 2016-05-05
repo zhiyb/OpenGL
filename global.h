@@ -14,9 +14,10 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#define SHADER_PATH	"./shaders/"
-#define TEXTURE_PATH	"./images/"
-#define MODEL_PATH	"./models/"
+#define SHADER_PATH	"shaders/"
+#define TEXTURE_PATH	"images/"
+#define MODEL_PATH	"models/"
+#define DATA_PATH	"data/"
 
 //#define BULLET
 //#define MODELS
@@ -30,8 +31,8 @@
 #define CAMERA_V0_POS	glm::vec3(-0.266186, 0.207137, 0.350882)
 #define CAMERA_V0_ROT	glm::quat(0.864666, -0.0412326, -0.50014, -0.0227479)
 // L
-#define CAMERA_V1_POS	glm::vec3(0.0984262, 0.172868, 0.316164)
-#define CAMERA_V1_ROT	glm::quat(0.999475, -0.0323378, 0.00195828, 0.000608202)
+#define CAMERA_V1_POS	glm::vec3(-0.164747, 0.187142, 0.48217)
+#define CAMERA_V1_ROT	glm::quat(0.998579, -0.052822, 0.00645501, -0.0026899)
 // O
 #define CAMERA_V2_POS	glm::vec3(-5.97896, 8.86862, 3.46077)
 #define CAMERA_V2_ROT	glm::quat(0.715113, -0.369985, -0.488345, -0.336535)
