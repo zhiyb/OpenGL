@@ -38,6 +38,7 @@ void Wavefront::useMaterial(const int i)
 		checkError("Wavefront: binding texture");
 		glUniform1i(uniforms[UNIFORM_TEXTURED], 1);
 	} else {
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glUniform1i(uniforms[UNIFORM_TEXTURED], 0);
 		//clog << __func__ << ": No texture";
 	}
@@ -147,8 +148,9 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 void Wavefront::debugPrint()
 {
 	clog << __PRETTY_FUNCTION__ << endl;
+	int i = 0;
 	for (const shape_t &shape: shapes) {
-		clog << "S: " << shape.name << endl;
+		clog << "S/" << i++ << ": " << shape.name << endl;
 #if 0
 		for (const unsigned char nvec: shape.mesh.num_vertices) {
 			if (nvec != 3)
@@ -164,8 +166,9 @@ void Wavefront::debugPrint()
 		clog << "\tsizeof material_ids: " << shape.mesh.material_ids.size() << endl;
 		clog << "\tsizeof tags: " << shape.mesh.tags.size() << endl;
 	}
+	i = 0;
 	for (const material_t &material: materials) {
-		clog << "M: " << material.name << endl;
+		clog << "M/" << i++ << ": " << material.name << endl;
 		if (!material.ambient_texname.empty())
 			clog << "\tmap_Ka: " << material.ambient_texname << endl;
 		if (!material.diffuse_texname.empty())

@@ -599,6 +599,12 @@ int main(int /*argc*/, char */*argv*/[])
 		return -1;
 	}
 
+	if (!GLEW_VERSION_3_3) {
+		cerr << "OpenGL version 3.3 not supported by this system" << endl;
+		glfwTerminate();
+		return -1;
+	}
+
 #if 0	// GLFW supports cube_map, but GLEW does not?
 	clog << (glIsEnabled(GL_TEXTURE_CUBE_MAP_ARB) ? "Yes" : "No") << endl;
 	clog << (GLEW_ARB_texture_cube_map ? "Yes" : "No") << endl;
@@ -612,7 +618,8 @@ int main(int /*argc*/, char */*argv*/[])
 		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
 #endif
 
-	checkError("initialisation");
+	glGetError();	// There is an initialisation error
+	//checkError("initialisation");
 	glEnable(GL_DEPTH_TEST);
 	checkError("enabling depth test");
 #ifdef CULL_FACE

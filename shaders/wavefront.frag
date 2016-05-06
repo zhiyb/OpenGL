@@ -1,4 +1,4 @@
-#version 400
+#version 330
 
 out vec4 FragColor;
 uniform int textured;
@@ -18,7 +18,7 @@ void main(void)
 	vec3 normal = vertex.normal;
 	vec4 tex = vec4(diffuse, 1.0);
 	if (textured != 0)
-		tex *= texture(sampler, vertex.texCoord);
+		tex = tex * texture(sampler, vertex.texCoord);
 	if (tex.a < 0.5)
 		discard;
 	else
