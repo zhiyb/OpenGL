@@ -5,16 +5,22 @@ uniform float textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular, emission;
 uniform vec3 environment, light, lightIntensity;
+uniform sampler2D sampler;
 
 in VERTEX {
 	vec3 normal;
 	vec3 viewer;
+	vec2 texCoord;
 } vertex;
 
 void main(void)
 {
 	vec3 normal = vertex.normal;
-	vec4 tex = vec4(diffuse, 1.0);
+	vec4 tex = vec4(diffuse, 1.0) * texture(sampler, vertex.texCoord);
+	if (tex.a < 0.5)
+		discard;
+	else
+		tex.a = 1.0;
 
 	vec3 colour = tex.rgb * ambient * environment;
 

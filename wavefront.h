@@ -25,6 +25,7 @@ private:
 
 	bool loaded;
 	int materialID;
+	GLuint programID;
 	std::string texDir;
 	std::vector<GLuint> vaos;
 	std::map<std::string, GLuint> textures;

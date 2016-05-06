@@ -209,6 +209,11 @@ GLuint setupPrograms()
 			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
 			{0, NULL}
 		},
+		[PROGRAM_WAVEFRONT_TEXTURED] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "wavefront_textured.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront_textured.frag"},
+			{0, NULL}
+		},
 		[PROGRAM_SKYBOX] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "skybox.vert"},
 			{GL_FRAGMENT_SHADER, SHADER_PATH "skybox.frag"},

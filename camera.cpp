@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "camera.h"
 #include "global.h"
+#include "world.h"
 
 #define CAMERA_MOVEMENT	0.02f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
@@ -18,12 +19,16 @@ using namespace glm;
 
 Camera camera;
 
-Camera::Camera() : pos(CAMERA_INIT_POS), rot(quat()), speed(0.f)
+Camera::Camera()
 {
+	pos = CAMERA_INIT_POS;
+	rot = quat();
+	speed = 0.f;
 	input.cursor = vec2(-1.f, -1.f);
 	input.pressed = false;
 	movement = CAMERA_MOVEMENT;
 	backup();
+	updateCalc();
 }
 
 void Camera::keyCB(int key)
@@ -32,54 +37,55 @@ void Camera::keyCB(int key)
 	case GLFW_KEY_LEFT:
 		// Turn camera to the left
 		rotate(CAMERA_ROTATE);
-		return;
+		break;
 	case GLFW_KEY_RIGHT:
 		// Turn camera to the right
 		rotate(-CAMERA_ROTATE);
-		return;
+		break;
 	case GLFW_KEY_UP:
 		// Increase the forward speed of the camera
 		accelerate(CAMERA_ACCEL);
-		return;
+		break;
 	case GLFW_KEY_DOWN:
 		// Decrease the forward speed of the camera (minimum 0, stays)
 		accelerate(-CAMERA_ACCEL);
-		return;
+		break;
 	case GLFW_KEY_PAGE_UP:
 		// Increase the elevation of the camera (optional)
 		elevate(CAMERA_ELEV);
-		return;
+		break;
 	case GLFW_KEY_PAGE_DOWN:
 		// Decrease the elevation of the camera (optional)
 		elevate(-CAMERA_ELEV);
-		return;
+		break;
 #if 1
 	case GLFW_KEY_W:
 		pos += forward() * movement;
-		return;
+		break;
 	case GLFW_KEY_S:
 		pos += forward() * -movement;
-		return;
+		break;
 	case GLFW_KEY_D:
 		pos += right() * movement;
-		return;
+		break;
 	case GLFW_KEY_A:
 		pos += right() * -movement;
-		return;
+		break;
 	case GLFW_KEY_K:
 		pos += upward() * movement;
-		return;
+		break;
 	case GLFW_KEY_J:
 		pos += upward() * -movement;
-		return;
+		break;
 	case GLFW_KEY_COMMA:
 		rot = glm::rotate(quat(), movement, forward()) * rot;
-		return;
+		break;
 	case GLFW_KEY_PERIOD:
 		rot = glm::rotate(quat(), -movement, forward()) * rot;
-		return;
+		break;
 #endif
 	}
+	updateCalc();
 }
 
 void Camera::mouseCB(int button, int action)
@@ -87,9 +93,6 @@ void Camera::mouseCB(int button, int action)
 	if (button == GLFW_MOUSE_BUTTON_LEFT) {
 		if (action == GLFW_PRESS) {
 			input.pressed = true;
-			//double xpos, ypos;
-			//glfwGetCursorPos(window, &xpos, &ypos);
-			//input.cursor = vec2(xpos, ypos);
 		} else {
 			input.pressed = false;
 			input.cursor = vec2(-1.f, -1.f);
@@ -118,11 +121,13 @@ void Camera::cursorCB(double xpos, double ypos)
 		rot = glm::rotate(rot, 1.f / 512.f * glm::distance(input.cursor, pos), axis);
 	}
 	input.cursor = pos;
+	updateCalc();
 }
 
 void Camera::updateCB(float time)
 {
 	pos += forward() * speed * time;
+	updateCalc();
 }
 
 void Camera::backup()
@@ -164,6 +169,13 @@ void Camera::print()
 {
 	clog << "Camera @(" << pos.x << ", " << pos.y << ", " << pos.z << "), (";
 	clog << rot.w << ", " << rot.x << ", " << rot.y << ", " << rot.z << ")" << endl;
+}
+
+void Camera::updateCalc()
+{
+	matrix.view = view();
+	viewer = vec3(transpose(inverse(matrix.view)) * vec4(position(), 0.f));
+	light = vec3(transpose(inverse(matrix.view)) * vec4(environment.light.direction, 0.f));
 }
 
 glm::mat4 Camera::view() const

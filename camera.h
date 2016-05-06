@@ -30,10 +30,14 @@ public:
 	glm::vec3 upward() const {return rot * glm::vec3(0.f, 1.f, 0.f);}
 	glm::vec3 forward() const {return rot * glm::vec3(0.f, 0.f, -1.f);}
 	glm::mat4 view() const;
+	glm::vec3 &viewerPojection() {return viewer;}
+	glm::vec3 &lightProjection() {return light;}
 
 	void print();
 
 private:
+	void updateCalc();
+
 	struct {
 		glm::vec3 pos;
 		glm::quat rot;
@@ -41,6 +45,8 @@ private:
 	glm::vec3 pos;
 	glm::quat rot;
 	float speed, movement;
+
+	glm::vec3 viewer, light;
 
 	struct {
 		bool pressed;

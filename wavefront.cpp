@@ -5,6 +5,7 @@
 #include <stb_image.h>
 #include "world.h"
 #include "global.h"
+#include "camera.h"
 #include "helper.h"
 #include "wavefront.h"
 
@@ -18,30 +19,39 @@ void Wavefront::useMaterial(const int i)
 {
 	if (i == materialID)
 		return;
-	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
-
-	// Material properties
 	const material_t &material = materials.at(i);
+
+	GLuint pID;
+	if (material.diffuse_texname.empty())
+		pID = PROGRAM_WAVEFRONT;
+	else {
+		pID = PROGRAM_WAVEFRONT_TEXTURED;
+		GLuint texture = textures[material.diffuse_texname];
+		glBindTexture(GL_TEXTURE_2D, texture);
+	}
+
+	if (programID != pID) {
+		programID = pID;
+		glUseProgram(programs[pID].id);
+		//checkError("switching to PROGRAM_WAVEFRONT");
+		uniformMap &uniforms = programs[pID].uniforms;
+
+		glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&camera.lightProjection());
+		glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
+		glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.viewerPojection());
+
+		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+	}
+
+	uniformMap &uniforms = programs[pID].uniforms;
 	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
 	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
 	glUniform3fv(uniforms[UNIFORM_EMISSION], 1, material.emission);
 	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
 	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
-	//checkError("Wavefront: setting uniforms");
-
-	if (!material.diffuse_texname.empty()) {
-		GLuint texture = textures[material.diffuse_texname];
-		if (texture == 0)
-			clog << __func__ << ": Empty texture for material " << i << endl;
-		glBindTexture(GL_TEXTURE_2D, texture);
-		checkError("Wavefront: binding texture");
-		glUniform1f(uniforms[UNIFORM_TEXTURED], 1);
-	} else {
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glUniform1f(uniforms[UNIFORM_TEXTURED], 0);
-		//clog << __func__ << ": No texture";
-	}
 }
 
 void Wavefront::render()
@@ -49,10 +59,11 @@ void Wavefront::render()
 	if (!loaded)
 		return;
 	materialID = -1;
+	programID = 0;
 	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
 		glBindVertexArray(vaos[shapeID]);
-		checkError("Wavefront: binding vertex array");
+		//checkError("Wavefront: binding vertex array");
 		const mesh_t &mesh = shape.mesh;
 		if (mesh.indices.size() < 3)
 			continue;
@@ -66,12 +77,12 @@ void Wavefront::render()
 			useMaterial(mtl);
 			mtl = mtl2;
 			glDrawElements(GL_TRIANGLES, i - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
-			checkError("Wavefront: draw elements");
+			//checkError("Wavefront: draw elements");
 			start = i;
 		}
 		useMaterial(mtl);
 		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
-		checkError("Wavefront: draw elements");
+		//checkError("Wavefront: draw elements");
 		shapeID++;
 	}
 }
