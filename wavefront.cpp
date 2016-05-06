@@ -28,12 +28,17 @@ void Wavefront::useMaterial(const int i)
 	glUniform3fv(uniforms[UNIFORM_EMISSION], 1, material.emission);
 	glUniform3fv(uniforms[UNIFORM_SPECULAR], 1, material.specular);
 	glUniform1f(uniforms[UNIFORM_SHININESS], material.shininess);
+	//checkError("Wavefront: setting uniforms");
 
 	if (!material.diffuse_texname.empty()) {
-		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
-		glUniform1ui(uniforms[UNIFORM_TEXTURED], 1);
+		GLuint texture = textures[material.diffuse_texname];
+		if (texture == 0)
+			clog << __func__ << ": Empty texture for material " << i << endl;
+		glBindTexture(GL_TEXTURE_2D, texture);
+		checkError("Wavefront: binding texture");
+		glUniform1i(uniforms[UNIFORM_TEXTURED], 1);
 	} else {
-		glUniform1ui(uniforms[UNIFORM_TEXTURED], 0);
+		glUniform1i(uniforms[UNIFORM_TEXTURED], 0);
 		//clog << __func__ << ": No texture";
 	}
 }
@@ -60,10 +65,12 @@ void Wavefront::render()
 			useMaterial(mtl);
 			mtl = mtl2;
 			glDrawElements(GL_TRIANGLES, i - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
+			checkError("Wavefront: draw elements");
 			start = i;
 		}
 		useMaterial(mtl);
 		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
+		checkError("Wavefront: draw elements");
 		shapeID++;
 	}
 }

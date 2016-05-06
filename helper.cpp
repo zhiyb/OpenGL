@@ -239,7 +239,7 @@ GLuint setupTextures()
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
-		[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
+		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
 		// glow1.png: http://vterrain.org/Atmosphere/
 		[TEXTURE_GLOW]		= {TEXTURE_PATH "glow1.png"},
 		// diamond_block.png: Minecraft

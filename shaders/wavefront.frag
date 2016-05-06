@@ -1,7 +1,7 @@
 #version 400
 
 out vec4 FragColor;
-uniform uint textured;
+uniform int textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular, emission;
 uniform vec3 environment, light, lightIntensity;
