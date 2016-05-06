@@ -4,13 +4,13 @@
 models/Dunwell/model.obj models/Dunwell/ models/Dunwell/model/	1	1 1 1	0 0.15 0	0
 
 # http://kiomodel3.sblo.jp/article/23486819.html
-models/miku/model.obj models/miku/ models/miku/textures/	0	0.2 0.2 0.2	0.2 0.3 0	0
+models/miku/model.obj models/miku/ models/miku/textures/	0	0.2 0.2 0.2	0.2 0.149 0	0
 
 # http://mqdl.jpn.org/public
-models/nanoMiku/nanoMiku.obj models/nanoMiku/ models/nanoMiku/	0	0.1 0.1 0.1	0 0.15 0	0
-models/nanoRin/nanoRin.obj models/nanoRin/ models/nanoRin/	0	0.1 0.1 0.1	-0.2 0 0	0
-models/nanoLen/nanoLen.obj models/nanoLen/ models/nanoLen/	0	0.1 0.1 0.1	-0.4 0 0	0
-models/nanoGUMI/nanoGUMI.obj models/nanoGUMI/ models/nanoGUMI/	0	0.1 0.1 0.1	-0.6 0 0	0
+models/nanoMiku/nanoMiku.obj models/nanoMiku/ models/nanoMiku/	0	0.1 0.1 0.1	0 0.149 0	0
+models/nanoRin/nanoRin.obj models/nanoRin/ models/nanoRin/	0	0.1 0.1 0.1	-0.2 0.149 0	0
+models/nanoLen/nanoLen.obj models/nanoLen/ models/nanoLen/	0	0.1 0.1 0.1	-0.4 0.149 0	0
+models/nanoGUMI/nanoGUMI.obj models/nanoGUMI/ models/nanoGUMI/	0	0.1 0.1 0.1	-0.6 0.149 0	0
 
 #models/simple.obj models/ models/	0	1 1 1	0 0 0
 
