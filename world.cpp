@@ -66,7 +66,7 @@ void environment_t::load()
 		else if (param == "Night")
 			ss >> day.night.intensity >> day.night.ambient;
 		else if (param == "Sun")
-			ss >> sun.initial >> sun.axis >> sun.size >> sun.colour;
+			ss >> sun.initial >> sun.axis >> sun.size >> sun.colour >> sun.moon;
 	}
 	day.duration = day.sunrise.duration + day.daytime.duration + \
 			day.sunset.duration + day.night.duration;
@@ -83,6 +83,7 @@ void environment_t::update(float time)
 		float ratio = time / day.sunrise.duration;
 		ambient = day.night.ambient + min(day.sunrise.rate * ratio, vec3(1.f)) * (day.daytime.ambient - day.night.ambient);
 		light.intensity = day.night.intensity + min(day.sunrise.rate * ratio, vec3(1.f)) * (day.daytime.intensity - day.night.intensity);
+		day.status = Sunrise;
 		goto direction;
 	} else
 		time -= day.sunrise.duration;
@@ -90,6 +91,7 @@ void environment_t::update(float time)
 	if (time < day.daytime.duration) {
 		ambient = day.daytime.ambient;
 		light.intensity = day.daytime.intensity;
+		day.status = Daytime;
 		goto direction;
 	} else
 		time -= day.daytime.duration;
@@ -98,10 +100,12 @@ void environment_t::update(float time)
 		float ratio = time / day.sunrise.duration;
 		ambient = day.daytime.ambient - min(day.sunset.rate * ratio, vec3(1.f)) * (day.daytime.ambient - day.night.ambient);
 		light.intensity = day.daytime.intensity - min(day.sunset.rate * ratio, vec3(1.f)) * (day.daytime.intensity - day.night.intensity);
+		day.status = Sunset;
 	} else {
 		ambient = day.night.ambient;
 		light.intensity = day.night.intensity;
 		angle = PI * (time - day.sunset.duration) / day.night.duration;
+		day.status = Night;
 	}
 
 direction:
@@ -137,7 +141,10 @@ void environment_t::render()
 	mesh.skybox->render();
 
 	// Render sun
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&sun.colour);
+	if (day.status != Night)
+		glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&sun.colour);
+	else
+		glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&sun.moon);
 
 	matrix.model = translate(mat4(), environment.light.direction);
 	matrix.model = translate(matrix.model, camera.position());

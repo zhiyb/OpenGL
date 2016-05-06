@@ -239,7 +239,7 @@ static void render()
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
 	vec3 light = vec3(transpose(inverse(matrix.view)) * vec4(environment.light.direction, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&light);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);

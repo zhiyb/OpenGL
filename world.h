@@ -27,10 +27,13 @@ public:
 	environment_t();
 	~environment_t();
 
+	enum DaylightStatus {Sunrise, Daytime, Sunset, Night};
+
 	void load();
 	void update(float time);
 	void setup();
 	void render();
+	enum DaylightStatus status() {return day.status;}
 
 	glm::vec3 ambient;
 	struct {
@@ -39,6 +42,7 @@ public:
 
 private:
 	struct {
+		enum DaylightStatus status;
 		struct {
 			float duration;
 			glm::vec3 rate;
@@ -58,7 +62,7 @@ private:
 		float duration;
 	} day;
 	struct {
-		glm::vec3 initial, axis, colour;
+		glm::vec3 initial, axis, colour, moon;
 		float size;
 	} sun;
 

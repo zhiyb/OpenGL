@@ -63,7 +63,7 @@ enum {
 #define UNIFORM_EMISSION	"emission"
 #define UNIFORM_SHININESS	"shininess"
 #define UNIFORM_VIEWER		"viewer"
-#define UNIFORM_LIGHT		"light"
+#define UNIFORM_LIGHT_DIRECTION	"light"
 #define UNIFORM_LIGHT_INTENSITY	"lightIntensity"
 #define UNIFORM_ENVIRONMENT	"environment"
 #define UNIFORM_COLOUR		"colour"
