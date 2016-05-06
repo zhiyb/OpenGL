@@ -13,7 +13,6 @@
 
 #include "sphere.h"
 #include "cube.h"
-#include "cubeenclosed.h"
 #include "skybox.h"
 #include "wavefront.h"
 
@@ -35,19 +34,11 @@ static struct Status {
 	enum {CameraMode, TourMode} mode;
 } status;
 
-#ifdef BULLET
-static struct Arena {
-	Object *object;
-	float scale;
-	vec4 colour;
-	vector<btRigidBody *> bodies;
-} arena;
-#endif
-
 #ifndef MODELS
 struct object_t {
 	bool culling;
-	vec3 scale, offset;
+	float rotation;
+	vec3 scale, offset, rotationAxis;
 	Object *model;
 };
 vector<object_t> objects;
@@ -173,10 +164,10 @@ void setupObjects()
 		string modelPath, mtlPath, texPath;
 		object_t obj;
 		ss >> modelPath >> mtlPath >> texPath;
-		ss >> obj.culling;
-		ss >> obj.scale >> obj.offset;
 		if (!ss)
 			continue;
+		ss >> obj.culling;
+		ss >> obj.scale >> obj.offset >> obj.rotation >> obj.rotationAxis;
 		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
 		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
 		if (!model)
@@ -244,7 +235,11 @@ static void render()
 
 #ifndef MODELS
 	for (object_t &obj: objects) {
-		matrix.model = translate(mat4(), obj.offset);
+		if (obj.rotation == 0.f)
+			matrix.model = mat4();
+		else
+			matrix.model = rotate(mat4(), obj.rotation, obj.rotationAxis);
+		matrix.model = translate(matrix.model, obj.offset);
 		matrix.model = scale(matrix.model, obj.scale);
 		matrix.update();
 		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);

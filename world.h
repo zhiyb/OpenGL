@@ -69,6 +69,7 @@ private:
 	struct {
 		class Skybox *skybox;
 		class Circle *sun;
+		class Ground *ground;
 	} mesh;
 } environment;
 

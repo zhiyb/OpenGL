@@ -46,6 +46,11 @@ istream &operator>>(istream &stream, glm::vec4 &vec)
 	return stream >> vec.x >> vec.y >> vec.z >> vec.w;
 }
 
+ostream &operator<<(ostream &stream, const glm::vec3 &vec)
+{
+	return stream << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
+}
+
 char *readFile(const char *path)
 {
 	ifstream is;
@@ -239,7 +244,7 @@ GLuint setupTextures()
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_WHITE]		= {0},
-		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
+		//[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
 		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
 		// glow1.png: http://vterrain.org/Atmosphere/
 		[TEXTURE_GLOW]		= {TEXTURE_PATH "glow1.png"},
@@ -247,6 +252,8 @@ GLuint setupTextures()
 		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
 		// skybox3.png: http://scmapdb.com/skybox:sky-blu
 		[TEXTURE_SKYBOX]	= {TEXTURE_PATH "skybox3.png"},
+		[TEXTURE_GROUND]	= {TEXTURE_PATH "ground.png"},
+		//[TEXTURE_GROUND_BUMP]	= {TEXTURE_PATH "ground_bump.png"},
 		[TEXTURE_DEBUG]		= {TEXTURE_PATH "debug.png"},
 	};
 

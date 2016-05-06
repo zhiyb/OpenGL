@@ -7,6 +7,7 @@
 
 #include "circle.h"
 #include "skybox.h"
+#include "ground.h"
 
 using namespace std;
 using namespace glm;
@@ -115,6 +116,7 @@ direction:
 void environment_t::setup()
 {
 	mesh.skybox = new Skybox;
+	mesh.ground = new Ground;
 	mesh.sun = new Circle(32);
 }
 
@@ -125,7 +127,7 @@ void environment_t::render()
 
 	// Render skybox
 	glUseProgram(programs[PROGRAM_SKYBOX].id);
-	checkError("switching to PROGRAM_SKYBOX");
+	//checkError("switching to PROGRAM_SKYBOX");
 	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
 
 	vec3 brightness = ambient + light.intensity;
@@ -136,7 +138,7 @@ void environment_t::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
-	checkError("binding TEXTURE_SKYBOX");
+	//checkError("binding TEXTURE_SKYBOX");
 	mesh.skybox->bind();
 	mesh.skybox->render();
 
@@ -156,10 +158,25 @@ void environment_t::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GLOW].texture);
-	checkError("binding TEXTURE_GLOW");
+	//checkError("binding TEXTURE_GLOW");
 	mesh.sun->bind();
 	mesh.sun->render();
 
+	// Render ground
+	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&brightness);
+
+	vec3 pos(floor(camera.position()));
+	matrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
+	//matrix.model = scale(matrix.model, vec3(0.1f));
+	matrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GROUND].texture);
+	//checkError("binding TEXTURE_GLOW");
+	mesh.ground->bind();
+
 	glDepthMask(GL_TRUE);
+	mesh.ground->render();
+
 	//glClear(GL_DEPTH_BUFFER_BIT);
 }

@@ -13,4 +13,5 @@ void main(void)
 {
 	vec4 tex = texture(sampler, vertex.texCoord);
 	FragColor = vec4(ambient * tex.rgb, tex.a);
+	//FragColor = vec4(vertex.texCoord, 1.0, 1.0);
 }
