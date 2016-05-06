@@ -104,34 +104,42 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 		GLuint buffers[4];
 		glGenBuffers(4, buffers);
 
-		//clog << "\tstep: positions" << endl;
-		glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
-		glBufferData(GL_ARRAY_BUFFER, mesh.positions.size() * sizeof(float), mesh.positions.data(), GL_STATIC_DRAW);
-		if (checkError("Wavefront: uploading vertices"))
-			return;
-		glEnableVertexAttribArray(ATTRIB_POSITION);
-		glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		if (!mesh.positions.empty()) {
+			//clog << "\tstep: positions" << endl;
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+			glBufferData(GL_ARRAY_BUFFER, mesh.positions.size() * sizeof(float), mesh.positions.data(), GL_STATIC_DRAW);
+			if (checkError("Wavefront: uploading vertices"))
+				return;
+			glEnableVertexAttribArray(ATTRIB_POSITION);
+			glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
 
-		//clog << "\tstep: normals" << endl;
-		glBindBuffer(GL_ARRAY_BUFFER, buffers[1]);
-		glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(float), mesh.normals.data(), GL_STATIC_DRAW);
-		if (checkError("Wavefront: uploading normals"))
-			return;
-		glEnableVertexAttribArray(ATTRIB_NORMAL);
-		glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		if (!mesh.normals.empty()) {
+			//clog << "\tstep: normals" << endl;
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[1]);
+			glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(float), mesh.normals.data(), GL_STATIC_DRAW);
+			if (checkError("Wavefront: uploading normals"))
+				return;
+			glEnableVertexAttribArray(ATTRIB_NORMAL);
+			glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
 
-		glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
-		glBufferData(GL_ARRAY_BUFFER, mesh.texcoords.size() * sizeof(float), mesh.texcoords.data(), GL_STATIC_DRAW);
-		if (checkError("Wavefront: uploading texture coordinates"))
-			return;
-		glEnableVertexAttribArray(ATTRIB_TEXCOORD);
-		glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		if (!mesh.texcoords.empty()) {
+			glBindBuffer(GL_ARRAY_BUFFER, buffers[2]);
+			glBufferData(GL_ARRAY_BUFFER, mesh.texcoords.size() * sizeof(float), mesh.texcoords.data(), GL_STATIC_DRAW);
+			if (checkError("Wavefront: uploading texture coordinates"))
+				return;
+			glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+			glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		}
 
-		//clog << "\tstep: indices" << endl;
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
-		if (checkError("Wavefront: uploading indices"))
-			return;
+		if (!mesh.indices.empty()) {
+			//clog << "\tstep: indices" << endl;
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[3]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+			if (checkError("Wavefront: uploading indices"))
+				return;
+		}
 		i++;
 	}
 	loaded = true;
