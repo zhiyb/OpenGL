@@ -21,31 +21,12 @@ void Wavefront::useMaterial(const int i)
 		return;
 	const material_t &material = materials.at(i);
 
-	GLuint pID;
 	if (material.diffuse_texname.empty())
-		pID = PROGRAM_WAVEFRONT;
-	else {
-		pID = PROGRAM_WAVEFRONT_TEXTURED;
-		GLuint texture = textures[material.diffuse_texname];
-		glBindTexture(GL_TEXTURE_2D, texture);
-	}
+		glBindTexture(GL_TEXTURE_2D, ::textures[TEXTURE_WHITE].texture);
+	else
+		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
 
-	if (programID != pID) {
-		programID = pID;
-		glUseProgram(programs[pID].id);
-		//checkError("switching to PROGRAM_WAVEFRONT");
-		uniformMap &uniforms = programs[pID].uniforms;
-
-		glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&camera.lightProjection());
-		glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
-		glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.viewerPojection());
-
-		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-	}
-
-	uniformMap &uniforms = programs[pID].uniforms;
+	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
 	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);

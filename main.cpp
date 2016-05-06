@@ -232,11 +232,24 @@ static void render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	environment.render();
 
+	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
+	checkError("switching to PROGRAM_WAVEFRONT");
+	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
+
+	vec3 light = vec3(transpose(inverse(matrix.view)) * vec4(environment.light.direction, 0.f));
+	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&light);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
+	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+
 #ifndef MODELS
 	for (object_t &obj: objects) {
 		matrix.model = translate(mat4(), obj.offset);
 		matrix.model = scale(matrix.model, obj.scale);
 		matrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 		if (obj.culling)
 			glEnable(GL_CULL_FACE);

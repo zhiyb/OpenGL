@@ -209,11 +209,6 @@ GLuint setupPrograms()
 			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
 			{0, NULL}
 		},
-		[PROGRAM_WAVEFRONT_TEXTURED] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "wavefront_textured.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront_textured.frag"},
-			{0, NULL}
-		},
 		[PROGRAM_SKYBOX] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "skybox.vert"},
 			{GL_FRAGMENT_SHADER, SHADER_PATH "skybox.frag"},
@@ -243,6 +238,7 @@ GLuint setupTextures()
 		//GLenum type;
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
+		[TEXTURE_WHITE]		= {0},
 		[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
 		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
 		// glow1.png: http://vterrain.org/Atmosphere/
@@ -256,7 +252,38 @@ GLuint setupTextures()
 
 	//glActiveTexture(GL_TEXTURE0);
 	for (GLuint i = 0; i < TEXTURE_COUNT; i++)
-		textures[i] = loadTexture(textureInfo[i].file);
+		if (textureInfo[i].file != 0)
+			textures[i] = loadTexture(textureInfo[i].file);
+		else {	// White texture
+			texture_t &tex = textures[i];
+			tex.x = 1;
+			tex.y = 1;
+#ifdef TEXTURE_ALPHA
+			tex.n = 4;
+#else
+			tex.n = 3;
+#endif
+			glGenTextures(1, &tex.texture);
+			if (tex.texture == 0) {
+				cerr << "Cannot generate texture storage for white texture" << endl;
+				continue;
+			}
+			glBindTexture(GL_TEXTURE_2D, tex.texture);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			const unsigned char data[] = {0xff, 0xff, 0xff, 0xff};
+#ifdef TEXTURE_ALPHA
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.x, tex.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+#else
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+#endif
+			if (checkError("uploading white texture")) {
+				glDeleteTextures(1, &tex.texture);
+				tex.texture = 0;
+			}
+		}
 
 	return 0;
 }
@@ -290,10 +317,10 @@ texture_t loadTexture(const char *path)
 		return tex;
 	}
 	glBindTexture(GL_TEXTURE_2D, tex.texture);
-	checkError((string("binding texture storage for ") + path).c_str());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	checkError((string("setting texture parameters for ") + path).c_str());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 #ifdef TEXTURE_ALPHA
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.x, tex.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 #else
