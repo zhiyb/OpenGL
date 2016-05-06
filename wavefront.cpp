@@ -36,10 +36,10 @@ void Wavefront::useMaterial(const int i)
 			clog << __func__ << ": Empty texture for material " << i << endl;
 		glBindTexture(GL_TEXTURE_2D, texture);
 		checkError("Wavefront: binding texture");
-		glUniform1i(uniforms[UNIFORM_TEXTURED], 1);
+		glUniform1f(uniforms[UNIFORM_TEXTURED], 1);
 	} else {
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glUniform1i(uniforms[UNIFORM_TEXTURED], 0);
+		glUniform1f(uniforms[UNIFORM_TEXTURED], 0);
 		//clog << __func__ << ": No texture";
 	}
 }

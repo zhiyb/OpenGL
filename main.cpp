@@ -654,6 +654,7 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	glfwSetMouseButtonCallback(window, mouseCB);
+	//glfwSetScrollCallback(window, scrollCB);
 	glfwSetCursorPosCallback(window, cursorCB);
 	refreshCB(window);
 

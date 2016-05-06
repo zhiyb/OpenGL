@@ -1,7 +1,7 @@
 #version 330
 
 out vec4 FragColor;
-uniform int textured;
+uniform float textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular, emission;
 uniform vec3 environment, light, lightIntensity;
@@ -17,7 +17,7 @@ void main(void)
 {
 	vec3 normal = vertex.normal;
 	vec4 tex = vec4(diffuse, 1.0);
-	if (textured != 0)
+	if (textured != 0.0)
 		tex = tex * texture(sampler, vertex.texCoord);
 	if (tex.a < 0.5)
 		discard;
