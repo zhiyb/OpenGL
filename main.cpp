@@ -532,6 +532,11 @@ void mouseCB(GLFWwindow */*window*/, int button, int action, int /*mods*/)
 	camera.mouseCB(button, action);
 }
 
+void scrollCB(GLFWwindow */*window*/, double /*xoffset*/, double yoffset)
+{
+	camera.scrollCB(yoffset);
+}
+
 void cursorCB(GLFWwindow */*window*/, double xpos, double ypos)
 {
 	camera.cursorCB(xpos, ypos);
@@ -654,7 +659,7 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	glfwSetMouseButtonCallback(window, mouseCB);
-	//glfwSetScrollCallback(window, scrollCB);
+	glfwSetScrollCallback(window, scrollCB);
 	glfwSetCursorPosCallback(window, cursorCB);
 	refreshCB(window);
 

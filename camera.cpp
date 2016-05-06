@@ -22,6 +22,7 @@ Camera::Camera() : pos(CAMERA_INIT_POS), rot(quat()), speed(0.f)
 {
 	input.cursor = vec2(-1.f, -1.f);
 	input.pressed = false;
+	movement = CAMERA_MOVEMENT;
 	backup();
 }
 
@@ -54,28 +55,28 @@ void Camera::keyCB(int key)
 		return;
 #if 1
 	case GLFW_KEY_W:
-		pos += forward() * CAMERA_MOVEMENT;
+		pos += forward() * movement;
 		return;
 	case GLFW_KEY_S:
-		pos += forward() * -CAMERA_MOVEMENT;
+		pos += forward() * -movement;
 		return;
 	case GLFW_KEY_D:
-		pos += right() * CAMERA_MOVEMENT;
+		pos += right() * movement;
 		return;
 	case GLFW_KEY_A:
-		pos += right() * -CAMERA_MOVEMENT;
+		pos += right() * -movement;
 		return;
 	case GLFW_KEY_K:
-		pos += upward() * CAMERA_MOVEMENT;
+		pos += upward() * movement;
 		return;
 	case GLFW_KEY_J:
-		pos += upward() * -CAMERA_MOVEMENT;
+		pos += upward() * -movement;
 		return;
 	case GLFW_KEY_COMMA:
-		rot = glm::rotate(quat(), CAMERA_ROTATE, forward()) * rot;
+		rot = glm::rotate(quat(), movement, forward()) * rot;
 		return;
 	case GLFW_KEY_PERIOD:
-		rot = glm::rotate(quat(), -CAMERA_ROTATE, forward()) * rot;
+		rot = glm::rotate(quat(), -movement, forward()) * rot;
 		return;
 #endif
 	}
@@ -94,6 +95,14 @@ void Camera::mouseCB(int button, int action)
 			input.cursor = vec2(-1.f, -1.f);
 		}
 	}
+}
+
+void Camera::scrollCB(double yoffset)
+{
+	if (yoffset > 0)
+		movement *= 2.f;
+	else
+		movement /= 2.f;
 }
 
 void Camera::cursorCB(double xpos, double ypos)

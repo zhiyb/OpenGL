@@ -10,6 +10,7 @@ public:
 	Camera();
 	void keyCB(int key);
 	void mouseCB(int button, int action);
+	void scrollCB(double yoffset);
 	void cursorCB(double xpos, double ypos);
 	void updateCB(float time);
 
@@ -39,7 +40,7 @@ private:
 	} bak;
 	glm::vec3 pos;
 	glm::quat rot;
-	float speed;
+	float speed, movement;
 
 	struct {
 		bool pressed;
