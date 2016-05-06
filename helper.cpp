@@ -89,10 +89,10 @@ GLuint setupShader(const GLenum type, const char *source)
 	GLint i;
 	glGetShaderiv(sh, GL_INFO_LOG_LENGTH, &i);
 	if (i > 1) {
-		cout << "Compiling shader:" << endl << source << endl;
+		clog << "Compiling shader:" << endl << source << endl;
 		char log[i];
 		glGetShaderInfoLog(sh, i, &i, log);
-		cout.write(log, i);
+		clog.write(log, i);
 	}
 
 	glGetShaderiv(sh, GL_COMPILE_STATUS, &i);
