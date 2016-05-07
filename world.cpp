@@ -119,13 +119,7 @@ void environment_t::setup()
 	mesh.skybox = new Skybox;
 	mesh.ground = new Ground;
 	mesh.sun = new Circle(32);
-
-	btVector3 normal = btVector3(0.f, 1.f, 0.f);
-	btCollisionShape* shape = new btStaticPlaneShape(normal, 0.f);
-	btDefaultMotionState* motionState = new btDefaultMotionState;
-	btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0, motionState, shape);
-	groundRigidBody = new btRigidBody(rigidBodyCI);
-	bulletAddRigidBody(groundRigidBody, BULLET_GROUND);
+	bulletAddRigidBody(mesh.ground->createRigidBody(), BULLET_GROUND);
 }
 
 void environment_t::render()

@@ -42,7 +42,7 @@ btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform 
 {
 	btCollisionShape* fallshape = new btSphereShape(scale);
 	btDefaultMotionState* fallMotionState = new btDefaultMotionState(t);
-	btVector3 fallInertia(0,0,0);
+	btVector3 fallInertia(0, 0, 0);
 	fallshape->calculateLocalInertia(mass,fallInertia);
 	btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass, fallMotionState, fallshape, fallInertia);
 	btRigidBody* fallRigidBody = new btRigidBody(fallRigidBodyCI);

@@ -1,13 +1,14 @@
 #ifndef GROUND_H
 #define GROUND_H
 
-#include "square.h"
+#include "object.h"
 
 class Ground : public Object
 {
 public:
 	Ground() {setup();}
 	void render();
+	btRigidBody *createRigidBody();
 
 private:
 	void setup();

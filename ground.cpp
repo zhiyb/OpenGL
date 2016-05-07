@@ -9,6 +9,15 @@ void Ground::render()
 	glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 
+btRigidBody *Ground::createRigidBody()
+{
+	btVector3 normal = btVector3(0.f, 1.f, 0.f);
+	btCollisionShape* shape = new btStaticPlaneShape(normal, 0.f);
+	btDefaultMotionState* motionState = new btDefaultMotionState;
+	btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0, motionState, shape);
+	return new btRigidBody(rigidBodyCI);
+}
+
 void Ground::setup()
 {
 	addVertex(vec3(0.f));

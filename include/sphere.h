@@ -11,9 +11,7 @@ public:
 	void renderWireframe();
 	void renderPoints();
 	void renderNormal();
-#ifdef BULLET
 	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform t);
-#endif
 
 protected:
 	void setup();
