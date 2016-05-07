@@ -10,6 +10,7 @@
 #include "global.h"
 #include "helper.h"
 #include "camera.h"
+#include "bullet.h"
 
 #include "sphere.h"
 #include "cube.h"
@@ -70,63 +71,6 @@ struct Model {
 vector<Model *> models;
 #endif
 
-#ifdef BULLET
-// Bullet physics
-btBroadphaseInterface* broadphase;
-btDefaultCollisionConfiguration* collisionConfiguration;
-btCollisionDispatcher* dispatcher;
-btSequentialImpulseConstraintSolver* solver;
-btDiscreteDynamicsWorld* dynamicsWorld;
-
-void bulletInit()
-{
-	/*
-	 * set up world
-	 */
-	broadphase = new btDbvtBroadphase();
-	collisionConfiguration = new btDefaultCollisionConfiguration();
-	dispatcher = new btCollisionDispatcher(collisionConfiguration);
-	solver = new btSequentialImpulseConstraintSolver;
-	dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-	dynamicsWorld->setGravity(btVector3(0., GRAVITY, 0));
-
-	/*
-	 * Set up arena
-	 */
-	arena.object = new Cube;
-	arena.object->setup();
-	arena.scale = 1.5f;
-	arena.colour = vec4(0.2f, 0.4f, 1.f, 1.f);
-
-	btVector3 normals[] = {
-		btVector3(0.f, 0.f, 1.f),
-		btVector3(0.f, 1.f, 0.f),
-		btVector3(1.f, 0.f, 0.f),
-		btVector3(0.f, 0.f, -1.f),
-		btVector3(0.f, -1.f, 0.f),
-		btVector3(-1.f, 0.f, 0.f),
-	};
-	for (unsigned int i = 0; i != 6; i++) {
-		btCollisionShape* shape = new btStaticPlaneShape(normals[i], 0.f);
-		btDefaultMotionState* motionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1), -arena.scale * normals[i]));
-		btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0,motionState,shape,btVector3(0,0,0));
-		btRigidBody* rigidBody = new btRigidBody(rigidBodyCI);
-		rigidBody->setRestitution(RESTITUTION);
-		rigidBody->setFriction(FRICTION);
-		dynamicsWorld->addRigidBody(rigidBody);
-		arena.bodies.push_back(rigidBody);
-	}
-}
-
-mat4 bulletStep(btRigidBody* rigidBody) {
-	btTransform trans;
-	rigidBody->getMotionState()->getWorldTransform(trans);
-	mat4 matrix;
-	trans.getOpenGLMatrix((btScalar *)&matrix);
-	return matrix;
-}
-#endif
-
 void quit();
 
 #ifdef MODELS
@@ -151,9 +95,9 @@ void setupModelData(Model *model, const Model::Init *init, int size)
 void setupObjects()
 {
 #ifndef MODELS
-	ifstream datafs(DATA_PATH "/wavefront.txt");
+	ifstream datafs(DATA_WAVEFRONT);
 	if (!datafs) {
-		cerr << "Cannot open model description file " DATA_PATH "wavefront.txt" << endl;
+		cerr << "Cannot open model description file " DATA_WAVEFRONT << endl;
 		return;
 	}
 	string line;
@@ -382,16 +326,15 @@ void scene()
 
 void step()
 {
-	double time = glfwGetTime() - status.pauseDuration;
+	double time = glfwGetTime();
 	double diff = time - status.animation;
 	status.animation = time;
-
 	camera.updateCB(diff);
 
 	if (status.run) {
-#ifdef BULLET
-		dynamicsWorld->stepSimulation(diff, 100);
-#endif
+		//clog << __func__ << ": " << diff << endl;
+		time -= status.pauseDuration;
+		bulletUpdate(diff);
 		environment.update(time);
 	}
 }
@@ -441,16 +384,17 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	case GLFW_KEY_SPACE:
 		// Stop all motion (optional)
-		status.run = !status.run;
 		if (status.run)
-			status.pauseDuration += glfwGetTime() - status.pauseStart;
-		else
 			status.pauseStart = glfwGetTime();
+		else
+			status.pauseDuration += glfwGetTime() - status.pauseStart;
+		status.run = !status.run;
 		return;
 	case GLFW_KEY_R:
 		// Reset all animation (optional)
 		status.pauseDuration = glfwGetTime();
 		status.run = true;
+		camera.reset();
 		return;
 	case GLFW_KEY_P:
 		// Move to predefined location (screen shot)
@@ -516,19 +460,7 @@ void quit()
 		delete model->object;
 	}
 #endif
-#ifdef BULLET
-	for (btRigidBody *body: arena.bodies) {
-		dynamicsWorld->removeRigidBody(body);
-		delete body;
-	}
-#endif
-#ifdef BULLET
-	delete dynamicsWorld;
-	delete solver;
-	delete dispatcher;
-	delete collisionConfiguration;
-	delete broadphase;
-#endif
+	bulletCleanup();
 	exit(0);
 }
 
@@ -607,7 +539,6 @@ int main(int /*argc*/, char */*argv*/[])
 
 	camera.setup();
 	environment.setup();
-	environment.load();
 	setupObjects();
 	status.run = true;
 	status.mode = Status::CameraMode;

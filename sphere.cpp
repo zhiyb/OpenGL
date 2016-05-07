@@ -38,10 +38,10 @@ void Sphere::renderNormal()
 }
 
 #ifdef BULLET
-btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform T)
+btRigidBody *Sphere::createRigidBody(btScalar mass, btScalar scale, btTransform t)
 {
 	btCollisionShape* fallshape = new btSphereShape(scale);
-	btDefaultMotionState* fallMotionState = new btDefaultMotionState(T);
+	btDefaultMotionState* fallMotionState = new btDefaultMotionState(t);
 	btVector3 fallInertia(0,0,0);
 	fallshape->calculateLocalInertia(mass,fallInertia);
 	btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass, fallMotionState, fallshape, fallInertia);

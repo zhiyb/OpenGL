@@ -15,6 +15,7 @@ public:
 	void updateCB(float time);
 
 	void setup();
+	void reset();
 	void render();
 
 	void backup();
@@ -46,9 +47,11 @@ private:
 	} bak;
 	glm::vec3 pos;
 	glm::quat rot;
-	float speed, movement;
+	float speed, movement, impulse;
 
 	class Sphere *sphere;
+	class btRigidBody *rigidBody;
+	glm::mat4 modelMatrix;
 
 	struct {
 		bool pressed;

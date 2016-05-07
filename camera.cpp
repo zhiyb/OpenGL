@@ -1,13 +1,9 @@
 #include <iostream>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "camera.h"
 #include "global.h"
 #include "world.h"
+#include "bullet.h"
+
 #include "sphere.h"
 
 #define CAMERA_MOVEMENT	0.02f
@@ -17,11 +13,11 @@
 #define CAMERA_SIZE	0.015f
 #define CAMERA_HEIGHT	(CAMERA_SIZE * 10.f)
 
-#ifdef BULLET
+#define CAMERA_INIT_POS	glm::vec3(0.f, 1.f + CAMERA_HEIGHT, 1.f)
+/*#ifdef BULLET
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
 #else
-#define CAMERA_INIT_POS	glm::vec3(0.f, CAMERA_HEIGHT, 1.f)
-#endif
+#endif*/
 
 using namespace std;
 using namespace glm;
@@ -33,6 +29,7 @@ Camera::Camera()
 	pos = CAMERA_INIT_POS;
 	rot = quat();
 	speed = 0.f;
+	impulse = 0.f;
 	input.cursor = vec2(-1.f, -1.f);
 	input.pressed = false;
 	movement = CAMERA_MOVEMENT;
@@ -135,13 +132,29 @@ void Camera::cursorCB(double xpos, double ypos)
 
 void Camera::updateCB(float time)
 {
-	pos += forward() * speed * time;
+	pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
+	modelMatrix = bulletGetMatrix(rigidBody);
+	rigidBody->activate(true);
+	rigidBody->applyCentralImpulse(to_btVector3(forward() * impulse));
+	//pos += forward() * speed * time;
 	updateCalc();
 }
 
 void Camera::setup()
 {
 	sphere = new Sphere(16);
+	btTransform t = btTransform(btQuaternion(0, 0, 0, 1), to_btVector3(CAMERA_INIT_POS));
+	rigidBody = sphere->createRigidBody(10.f, CAMERA_SIZE, t);
+	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
+	bulletAddRigidBody(rigidBody, BULLET_CAMERA);
+}
+
+void Camera::reset()
+{
+	rigidBody->getWorldTransform().setIdentity();
+	rigidBody->getWorldTransform().setOrigin(to_btVector3(CAMERA_INIT_POS));
+	rigidBody->activate(true);
+	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
 }
 
 void Camera::render()
@@ -154,7 +167,7 @@ void Camera::render()
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&position());
 
-	matrix.model = translate(mat4(), position() + vec3(0.f, -CAMERA_HEIGHT + CAMERA_SIZE, 0.f));
+	matrix.model = modelMatrix;
 	matrix.model = scale(matrix.model, vec3(CAMERA_SIZE));
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -172,25 +185,6 @@ void Camera::render()
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAMERA].texture);
 	sphere->bind();
 	sphere->render();
-#if 0
-	matrix.model = translate(mat4(), position() + vec3(0.f, -CAMERA_HEIGHT + CAMERA_SIZE, -0.2f));
-	matrix.model = scale(matrix.model, vec3(CAMERA_SIZE));
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	sphere->render();
-
-	matrix.model = translate(mat4(), position() + vec3(0.f, 0.f, -0.2f));
-	matrix.model = scale(matrix.model, vec3(CAMERA_SIZE));
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	sphere->render();
-#endif
 }
 
 void Camera::backup()
@@ -213,13 +207,13 @@ void Camera::rotate(float angle)
 
 void Camera::accelerate(float v)
 {
-	speed += speed * v;
+	impulse += impulse * v;
 	if (v > 0) {
-		if (speed < v)
-			speed = v;
+		if (impulse < v)
+			impulse = v;
 	} else {
-		if (speed < -v)
-			speed = 0.f;
+		if (impulse < -v)
+			impulse = 0.f;
 	}
 }
 

@@ -19,7 +19,11 @@
 #define MODEL_PATH	"models/"
 #define DATA_PATH	"data/"
 
-//#define BULLET
+#define DATA_ENVIRON	DATA_PATH "environment.txt"
+#define DATA_WAVEFRONT	DATA_PATH "wavefront.txt"
+#define DATA_BULLET	DATA_PATH "bullet.txt"
+
+#define BULLET
 //#define MODELS
 #define TEXTURE_ALPHA
 #define CULL_FACE

@@ -4,6 +4,7 @@
 #include "helper.h"
 #include "camera.h"
 #include "world.h"
+#include "bullet.h"
 
 #include "circle.h"
 #include "skybox.h"
@@ -38,9 +39,9 @@ environment_t::~environment_t()
 
 void environment_t::load()
 {
-	ifstream datafs(DATA_PATH "environment.txt");
+	ifstream datafs(DATA_ENVIRON);
 	if (!datafs) {
-		cerr << "Cannot open environment description file " DATA_PATH "environment.txt" << endl;
+		cerr << "Cannot open environment description file " DATA_ENVIRON << endl;
 		return;
 	}
 	string line;
@@ -114,9 +115,17 @@ direction:
 
 void environment_t::setup()
 {
+	load();
 	mesh.skybox = new Skybox;
 	mesh.ground = new Ground;
 	mesh.sun = new Circle(32);
+
+	btVector3 normal = btVector3(0.f, 1.f, 0.f);
+	btCollisionShape* shape = new btStaticPlaneShape(normal, 0.f);
+	btDefaultMotionState* motionState = new btDefaultMotionState;
+	btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0, motionState, shape);
+	groundRigidBody = new btRigidBody(rigidBodyCI);
+	bulletAddRigidBody(groundRigidBody, BULLET_GROUND);
 }
 
 void environment_t::render()

@@ -26,6 +26,7 @@ CppApplication {
     ]
 
     files: [
+        "bullet.*",
         "camera.*",
         "helper.*",
         "world.*",

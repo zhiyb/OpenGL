@@ -3,10 +3,6 @@
 
 #include "global.h"
 
-#define GRAVITY		-9.81f
-#define RESTITUTION	1.f
-#define FRICTION	0.1f
-
 extern class matrix_t
 {
 public:
@@ -67,6 +63,8 @@ private:
 		class Circle *sun;
 		class Ground *ground;
 	} mesh;
+
+	class btRigidBody *groundRigidBody;
 } environment;
 
 #endif // WORLD_H

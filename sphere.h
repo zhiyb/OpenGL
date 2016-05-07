@@ -12,7 +12,7 @@ public:
 	void renderPoints();
 	void renderNormal();
 #ifdef BULLET
-	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
+	btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform t);
 #endif
 
 protected:

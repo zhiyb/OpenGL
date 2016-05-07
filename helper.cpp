@@ -14,6 +14,7 @@
 //#define DEBUG_UNIFORMS
 
 using namespace std;
+using namespace glm;
 
 string basename(string &path)
 {
@@ -36,17 +37,17 @@ string basename(string &path)
 	return path;
 }
 
-istream &operator>>(istream &stream, glm::vec3 &vec)
+istream &operator>>(istream &stream, vec3 &vec)
 {
 	return stream >> vec.x >> vec.y >> vec.z;
 }
 
-istream &operator>>(istream &stream, glm::vec4 &vec)
+istream &operator>>(istream &stream, vec4 &vec)
 {
 	return stream >> vec.x >> vec.y >> vec.z >> vec.w;
 }
 
-ostream &operator<<(ostream &stream, const glm::vec3 &vec)
+ostream &operator<<(ostream &stream, const vec3 &vec)
 {
 	return stream << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
 }
