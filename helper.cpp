@@ -52,6 +52,11 @@ ostream &operator<<(ostream &stream, const vec3 &vec)
 	return stream << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
 }
 
+ostream &operator<<(ostream &stream, const quat &q)
+{
+	return stream << '(' << q.x << ", " << q.y << ", " << q.z << ", " << q.w << ')';
+}
+
 char *readFile(const char *path)
 {
 	ifstream is;

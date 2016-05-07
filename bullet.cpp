@@ -100,5 +100,6 @@ void bulletAddRigidBody(btRigidBody *rigidBody, const char *name)
 
 void bulletUpdate(double diff)
 {
-	dynamicsWorld->stepSimulation(diff, 60, 1.f / 180.f);
+	double step = 1.f / 180.f;
+	dynamicsWorld->stepSimulation(diff == 0.f ? step : diff, 60, step);
 }

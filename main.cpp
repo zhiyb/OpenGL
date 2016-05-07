@@ -30,8 +30,12 @@ program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
 struct object_t {
-	bool culling, bullet;
+	string name;
+	bool culling;
 	vec3 scale, offset;
+	bool bullet;
+	float mass;
+	btRigidBody *rigidBody;
 	Object *model;
 };
 vector<object_t> objects;
@@ -52,11 +56,13 @@ void setupObjects()
 		istringstream ss(line);
 		string modelPath, mtlPath, texPath;
 		object_t obj;
+		ss >> obj.name;
 		ss >> modelPath >> mtlPath >> texPath;
 		if (!ss)
 			continue;
 		ss >> obj.culling;
-		ss >> obj.scale >> obj.offset >> obj.bullet;
+		ss >> obj.scale >> obj.offset;
+		ss >> obj.bullet >> obj.mass;
 		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
 		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
 		if (!model)
@@ -66,16 +72,29 @@ void setupObjects()
 			continue;
 		}
 		obj.model = model;
-		objects.push_back(obj);
 
-		if (obj.bullet) {
+		obj.rigidBody = 0;
+		if (!obj.bullet) {
+			objects.push_back(obj);
+			continue;
+		}
+
+		if (!obj.mass) {
 			vector<btRigidBody *> rigidBodies;
-			model->createRigidBody(&rigidBodies, to_btVector3(obj.scale));
+			model->createStaticRigidBody(&rigidBodies, to_btVector3(obj.scale));
 			for (btRigidBody *rigidBody: rigidBodies) {
-				rigidBody->getWorldTransform().setOrigin(to_btVector3(obj.offset));
+				btVector3 origin = rigidBody->getWorldTransform().getOrigin();
+				rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
 				bulletAddRigidBody(rigidBody, BULLET_GROUND);
 			}
+		} else {
+			obj.rigidBody = model->createRigidBody(to_btVector3(obj.scale), obj.mass);
+			btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
+			obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
+			bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
+			obj.offset = -model->boundingOrigin() * obj.scale;
 		}
+		objects.push_back(obj);
 	}
 }
 
@@ -96,6 +115,8 @@ static void render()
 
 	for (object_t &obj: objects) {
 		matrix.model = translate(mat4(), obj.offset);
+		if (obj.rigidBody)
+			matrix.model = bulletGetMatrix(obj.rigidBody) * matrix.model;
 		matrix.model = scale(matrix.model, obj.scale);
 		matrix.update();
 		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -111,23 +132,40 @@ static void render()
 	}
 }
 
-void step()
+void step(bool first = false)
 {
 	double time = glfwGetTime();
 	double diff = time - status.animation;
 	status.animation = time;
 	camera.updateCB(diff);
 
-	if (status.run && diff > 0.f) {
+	if (first || (status.run && diff > 0.f)) {
 		//clog << __func__ << ": " << diff << endl;
 		time -= status.pauseDuration;
-		bulletUpdate(diff);
+		// Step 1 bullet simulation frame at first time
+		bulletUpdate(first ? 0.f : diff);
 		environment.update(time);
 	}
 }
 
 void tour(const bool e)
 {
+}
+
+void report()
+{
+	clog << "****** Report at " << glfwGetTime() << " seconds ******" << endl;
+	environment.print();
+	camera.print();
+	for (object_t &obj: objects) {
+		if (!obj.rigidBody)
+			continue;
+		btTransform trans;
+		obj.rigidBody->getMotionState()->getWorldTransform(trans);
+		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.scale;
+		quat rot = from_btQuaternion(trans.getRotation());
+		clog << obj.name << "\t@" << pos << ", " << rot << endl;
+	}
 }
 
 static void refreshCB(GLFWwindow *window)
@@ -146,7 +184,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 
 	if (key == GLFW_KEY_X) {
-		camera.print();
+		report();
 		return;
 	}
 
@@ -310,11 +348,11 @@ int main(int /*argc*/, char */*argv*/[])
 
 	float past = status.animation = glfwGetTime();
 	unsigned int count = 0;
+	bool first = true;
 	while (!glfwWindowShouldClose(window)) {
+		step(first);
+		first = false;
 		render();
-
-		// Step simulation
-		step();
 
 		// FPS counter
 		count++;

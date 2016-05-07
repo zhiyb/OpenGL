@@ -25,22 +25,16 @@ void Cube::render()
 		glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);
 }
 
-#ifdef BULLET
-btRigidBody *Cube::createRigidBody(btScalar mass, btScalar scale, btTransform T)
+btRigidBody *Cube::createRigidBody(btScalar mass, btVector3 scale, btTransform t)
 {
-	btCollisionShape* fallshape = new btBoxShape(btVector3(scale, scale, scale));
-	btDefaultMotionState* fallMotionState = new btDefaultMotionState(T);
+	btCollisionShape* fallshape = new btBoxShape(scale);
+	btDefaultMotionState* fallMotionState = new btDefaultMotionState(t);
 	btVector3 fallInertia(0,0,0);
 	fallshape->calculateLocalInertia(mass,fallInertia);
 	btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass, fallMotionState, fallshape, fallInertia);
 	btRigidBody* fallRigidBody = new btRigidBody(fallRigidBodyCI);
-	//fallRigidBody->setLinearVelocity(btVector3(-10, 20, 0));
-	//fallRigidBody->setRestitution(COE);
-	//dynamicsWorld->addRigidBody(fallRigidBody);
-	//fallRigidBody->getCollisionShape()->setLocalScaling(btVector3(0.5f, 0.5f, 0.5f));
 	return fallRigidBody;
 }
-#endif
 
 void Cube::setupVertices()
 {

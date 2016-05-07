@@ -7,7 +7,9 @@
 #include "global.h"
 #include "camera.h"
 #include "helper.h"
+#include "bullet.h"
 #include "wavefront.h"
+#include "cube.h"
 
 #include <BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h>
 #include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
@@ -44,6 +46,7 @@ void Wavefront::render()
 		return;
 	materialID = -1;
 	programID = 0;
+
 	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
 		glBindVertexArray(vaos[shapeID]);
@@ -71,7 +74,20 @@ void Wavefront::render()
 	}
 }
 
-void Wavefront::createRigidBody(vector<btRigidBody *> *rigidBodies, const btVector3 &scale)
+btRigidBody *Wavefront::createRigidBody(const btVector3 &scale, const float mass)
+{
+	btTransform t = btTransform(btQuaternion(0, 0, 0, 1),
+				    scale * to_btVector3(boundingBox.origin()));
+	btCollisionShape* fallshape = new btBoxShape(to_btVector3(boundingBox.size() / 2.f) * scale);
+	btDefaultMotionState* fallMotionState = new btDefaultMotionState(t);
+	btVector3 fallInertia(0,0,0);
+	fallshape->calculateLocalInertia(mass,fallInertia);
+	btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass, fallMotionState, fallshape, fallInertia);
+	btRigidBody* rigidBody = new btRigidBody(fallRigidBodyCI);
+	return rigidBody;
+}
+
+void Wavefront::createStaticRigidBody(vector<btRigidBody *> *rigidBodies, const btVector3 &scale)
 {
 	for (const shape_t &shape: shapes) {
 		const mesh_t &mesh = shape.mesh;
@@ -162,10 +178,30 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 		}
 		i++;
 	}
+	calcBoundingBox();
 	loaded = true;
 }
 
-void Wavefront::debugPrint()
+void Wavefront::calcBoundingBox()
+{
+	bool first = true;
+	for (const shape_t &shape: shapes) {
+		const std::vector<float> &positions = shape.mesh.positions;
+		for (unsigned int i = 0; i < positions.size(); i += 3) {
+			vec3 pos(positions[i], positions[i + 1], positions[i + 2]);
+			if (first) {
+				first = false;
+				boundingBox.max = boundingBox.min = pos;
+			} else {
+				boundingBox.max = max(boundingBox.max, pos);
+				boundingBox.min = min(boundingBox.min, pos);
+			}
+		}
+	}
+	//boundingBox.debugPrint();
+}
+
+void Wavefront::debugPrint() const
 {
 	clog << __PRETTY_FUNCTION__ << endl;
 	int i = 0;
@@ -231,4 +267,9 @@ void Wavefront::debugPrint()
 		// 	Reflection: Ray trace off
 		// 10 Casts shadows onto invisible surfaces
 	}
+}
+
+void Wavefront::BoundingBox::debugPrint() const
+{
+	clog << __PRETTY_FUNCTION__ << ": max = " << max << ", min = " << min << endl;
 }

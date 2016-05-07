@@ -34,6 +34,7 @@ public:
 	void load();
 	void update(float time);
 	void setup();
+	void print();
 	void render();
 	enum DaylightStatus status() {return day.status;}
 
@@ -74,6 +75,7 @@ private:
 		class Ground *ground;
 	} mesh;
 
+	double time;
 	class btRigidBody *groundRigidBody;
 } environment;
 

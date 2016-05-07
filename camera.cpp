@@ -1,4 +1,5 @@
 #include <iostream>
+#include "helper.h"
 #include "camera.h"
 #include "global.h"
 #include "world.h"
@@ -30,7 +31,6 @@ Camera::Camera()
 {
 	pos = CAMERA_INIT_POS;
 	rot = quat();
-	impulse = 0.f;
 	speed = 0.f;
 	input.cursor = vec2(-1.f, -1.f);
 	input.pressed = false;
@@ -165,7 +165,9 @@ void Camera::updateCB(float time)
 		pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
 		modelMatrix = bulletGetMatrix(rigidBody);
 		rigidBody->activate(true);
-		rigidBody->applyCentralImpulse(to_btVector3(forward() * impulse));
+		btScalar vy = rigidBody->getLinearVelocity().y();
+		vec3 speed(forward() * this->speed);
+		rigidBody->setLinearVelocity(btVector3(speed.x, vy, speed.z));
 	} else
 		pos += forward() * speed * time;
 	updateCalc();
@@ -175,7 +177,7 @@ void Camera::setup()
 {
 	sphere = new Sphere(16);
 	btTransform t = btTransform(btQuaternion(0, 0, 0, 1), to_btVector3(CAMERA_INIT_POS));
-	rigidBody = sphere->createRigidBody(10.f, CAMERA_SIZE, t);
+	rigidBody = sphere->createRigidBody(60.f, CAMERA_SIZE, t);
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
 	bulletAddRigidBody(rigidBody, BULLET_CAMERA);
 }
@@ -191,7 +193,6 @@ void Camera::stop()
 {
 	rigidBody->activate(true);
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
-	impulse = 0.f;
 	speed = 0.f;
 }
 
@@ -245,24 +246,13 @@ void Camera::rotate(float angle)
 
 void Camera::accelerate(float v)
 {
-	if (status.run) {
-		impulse += impulse * v;
-		if (v > 0) {
-			if (impulse < v)
-				impulse = v;
-		} else {
-			if (impulse < -v)
-				impulse = 0.f;
-		}
+	speed += speed * v;
+	if (v > 0) {
+		if (speed < v)
+			speed = v;
 	} else {
-		speed += speed * v;
-		if (v > 0) {
-			if (speed < v)
-				speed = v;
-		} else {
-			if (speed < -v)
-				speed = 0.f;
-		}
+		if (speed < -v)
+			speed = 0.f;
 	}
 }
 
@@ -273,8 +263,7 @@ void Camera::elevate(float angle)
 
 void Camera::print()
 {
-	clog << "Camera @(" << pos.x << ", " << pos.y << ", " << pos.z << "), (";
-	clog << rot.w << ", " << rot.x << ", " << rot.y << ", " << rot.z << ")" << endl;
+	clog << "Camera\t@" << pos << ", " << rot << endl;
 }
 
 void Camera::updateCalc()

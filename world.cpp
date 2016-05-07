@@ -90,6 +90,7 @@ void environment_t::load()
 
 void environment_t::update(float time)
 {
+	this->time = time;
 	time = fmod(time, day.duration);
 
 	float daytime = day.duration - day.night.duration;
@@ -135,6 +136,11 @@ void environment_t::setup()
 	mesh.ground = new Ground;
 	mesh.sun = new Circle(32);
 	bulletAddRigidBody(mesh.ground->createRigidBody(), BULLET_GROUND);
+}
+
+void environment_t::print()
+{
+	clog << "Environment at " << time << " seconds" << endl;
 }
 
 void environment_t::render()

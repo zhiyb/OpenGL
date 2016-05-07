@@ -47,7 +47,7 @@ private:
 	} bak;
 	glm::vec3 pos;
 	glm::quat rot;
-	float movement, speed, impulse;
+	float movement, speed;
 
 	class Sphere *sphere;
 	class btRigidBody *rigidBody;
