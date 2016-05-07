@@ -130,7 +130,7 @@ void Camera::cursorCB(double xpos, double ypos)
 	updateCalc();
 }
 
-void Camera::updateCB(float time)
+void Camera::updateCB(float /*time*/)
 {
 	pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
 	modelMatrix = bulletGetMatrix(rigidBody);

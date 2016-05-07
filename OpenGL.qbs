@@ -25,34 +25,24 @@ CppApplication {
         "-lglfw3", "-lgdi32", "-lopengl32",
     ]
 
-    files: [
-        "bullet.*",
-        "camera.*",
-        "helper.*",
-        "world.*",
-        "main.cpp",
-        "global.h",
-    ]
+    Group {
+        name: "Data files"
+        files: [
+            "data/**",
+        ]
+    }
 
     Group {
-        name: "Include"
+        name: "Header files"
         files: [
             "include/*",
         ]
     }
 
     Group {
-        name: "Objects src"
+        name: "Source files"
         files: [
-            "circle.*",
-            "ground.cpp",
-            "ground.h",
-            "square.*",
-            "skybox.*",
-            "sphere.*",
-            "object.*",
-            "cube.*",
-            "wavefront.*",
+            "*.cpp",
         ]
     }
 
@@ -82,7 +72,6 @@ CppApplication {
         files: [
             "config.lua",
             "README.md",
-            "data/**",
         ]
     }
 
