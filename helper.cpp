@@ -195,24 +195,14 @@ static void setupUniforms(GLuint index)
 GLuint setupPrograms()
 {
 	static const shader_t shaders[PROGRAM_COUNT][3] = {
-		[PROGRAM_BASIC] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "basic.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "basic.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_LIGHTING] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "lighting.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "lighting.frag"},
-			{0, NULL}
-		},
 		[PROGRAM_TEXTURE] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "texture.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_WAVEFRONT] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_SKYBOX] = {

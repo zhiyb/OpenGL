@@ -3,6 +3,16 @@
 
 #include "global.h"
 
+extern class status_t
+{
+public:
+	void pause(bool e);
+
+	bool run;
+	double animation, pauseStart, pauseDuration;
+	enum {CameraMode, TourMode} mode;
+} status;
+
 extern class matrix_t
 {
 public:

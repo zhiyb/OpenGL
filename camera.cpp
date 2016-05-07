@@ -6,18 +6,20 @@
 
 #include "sphere.h"
 
+#define CAMERA_FOLLOW
+
 #define CAMERA_MOVEMENT	0.02f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
 #define CAMERA_ELEV	(2.f * PI / 180.f)
 #define CAMERA_ACCEL	0.2f
 #define CAMERA_SIZE	0.015f
-#define CAMERA_HEIGHT	(CAMERA_SIZE * 10.f)
-
-#define CAMERA_INIT_POS	glm::vec3(0.f, 1.f + CAMERA_HEIGHT, 1.f)
-/*#ifdef BULLET
-#define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
+#ifdef CAMERA_FOLLOW
+#define CAMERA_HEIGHT	(CAMERA_SIZE * 1.f)
 #else
-#endif*/
+#define CAMERA_HEIGHT	(CAMERA_SIZE * 10.f)
+#endif
+
+#define CAMERA_INIT_POS	glm::vec3(0.f, 0.2f + CAMERA_HEIGHT, 1.f)
 
 using namespace std;
 using namespace glm;
@@ -28,8 +30,8 @@ Camera::Camera()
 {
 	pos = CAMERA_INIT_POS;
 	rot = quat();
-	speed = 0.f;
 	impulse = 0.f;
+	speed = 0.f;
 	input.cursor = vec2(-1.f, -1.f);
 	input.pressed = false;
 	movement = CAMERA_MOVEMENT;
@@ -64,6 +66,33 @@ void Camera::keyCB(int key)
 		// Decrease the elevation of the camera (optional)
 		elevate(-CAMERA_ELEV);
 		break;
+
+	case GLFW_KEY_P:
+		// Move to predefined location (screen shot)
+		backup();
+		setPosition(CAMERA_V0_POS);
+		setRotation(CAMERA_V0_ROT);
+		status.pause(true);
+		return;
+	case GLFW_KEY_L:
+		// Alternative view point 1 (optional)
+		backup();
+		setPosition(CAMERA_V1_POS);
+		setRotation(CAMERA_V1_ROT);
+		status.pause(true);
+		return;
+	case GLFW_KEY_O:
+		// Alternative view point 2 (overhead, optional)
+		backup();
+		setPosition(CAMERA_V2_POS);
+		setRotation(CAMERA_V2_ROT);
+		status.pause(true);
+		return;
+	case GLFW_KEY_M:
+		// Return to last position of mobile camera
+		restore();
+		return;
+
 #if 1
 	case GLFW_KEY_W:
 		pos += forward() * movement;
@@ -130,13 +159,15 @@ void Camera::cursorCB(double xpos, double ypos)
 	updateCalc();
 }
 
-void Camera::updateCB(float /*time*/)
+void Camera::updateCB(float time)
 {
-	pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
-	modelMatrix = bulletGetMatrix(rigidBody);
-	rigidBody->activate(true);
-	rigidBody->applyCentralImpulse(to_btVector3(forward() * impulse));
-	//pos += forward() * speed * time;
+	if (status.run) {
+		pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
+		modelMatrix = bulletGetMatrix(rigidBody);
+		rigidBody->activate(true);
+		rigidBody->applyCentralImpulse(to_btVector3(forward() * impulse));
+	} else
+		pos += forward() * speed * time;
 	updateCalc();
 }
 
@@ -153,8 +184,15 @@ void Camera::reset()
 {
 	rigidBody->getWorldTransform().setIdentity();
 	rigidBody->getWorldTransform().setOrigin(to_btVector3(CAMERA_INIT_POS));
+	stop();
+}
+
+void Camera::stop()
+{
 	rigidBody->activate(true);
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
+	impulse = 0.f;
+	speed = 0.f;
 }
 
 void Camera::render()
@@ -197,7 +235,7 @@ void Camera::restore()
 {
 	pos = bak.pos;
 	rot = bak.rot;
-	speed = 0;
+	stop();
 }
 
 void Camera::rotate(float angle)
@@ -207,13 +245,24 @@ void Camera::rotate(float angle)
 
 void Camera::accelerate(float v)
 {
-	impulse += impulse * v;
-	if (v > 0) {
-		if (impulse < v)
-			impulse = v;
+	if (status.run) {
+		impulse += impulse * v;
+		if (v > 0) {
+			if (impulse < v)
+				impulse = v;
+		} else {
+			if (impulse < -v)
+				impulse = 0.f;
+		}
 	} else {
-		if (impulse < -v)
-			impulse = 0.f;
+		speed += speed * v;
+		if (v > 0) {
+			if (speed < v)
+				speed = v;
+		} else {
+			if (speed < -v)
+				speed = 0.f;
+		}
 	}
 }
 
@@ -235,5 +284,9 @@ void Camera::updateCalc()
 
 glm::mat4 Camera::view() const
 {
+#ifdef CAMERA_FOLLOW
+	return lookAt(pos - forward() * CAMERA_SIZE * 2.f + upward() * CAMERA_SIZE * 1.f, pos + forward(), upward());
+#else
 	return lookAt(pos, pos + forward(), upward());
+#endif
 }

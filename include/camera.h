@@ -16,6 +16,7 @@ public:
 
 	void setup();
 	void reset();
+	void stop();
 	void render();
 
 	void backup();
@@ -27,7 +28,6 @@ public:
 
 	void setPosition(const glm::vec3 pos) {this->pos = pos;}
 	void setRotation(const glm::quat rot) {this->rot = rot;}
-	void setSpeed(float speed) {this->speed = speed;}
 	glm::vec3 &position() {return pos;}
 	glm::vec3 position() const {return pos;}
 	glm::quat rotation() const {return rot;}
@@ -47,7 +47,7 @@ private:
 	} bak;
 	glm::vec3 pos;
 	glm::quat rot;
-	float speed, movement, impulse;
+	float movement, speed, impulse;
 
 	class Sphere *sphere;
 	class btRigidBody *rigidBody;

@@ -1,6 +1,7 @@
 #ifndef WAVEFRONT_H
 #define WAVEFRONT_H
 
+#include <vector>
 #include <string>
 #include <map>
 #include "object.h"
@@ -12,9 +13,8 @@ public:
 	Wavefront(const char *file, const char *mtlDir, const char *texDir) {setup(file, mtlDir, texDir);}
 	bool isValid() const {return loaded;}
 	void bind() {}	// It needs multiple VAOs, binding during rendering
-	//void renderWireframe();
 	void render();
-	//btRigidBody *createRigidBody(btScalar mass, btScalar scale, btTransform T);
+	void createRigidBody(std::vector<btRigidBody *> *rigidBodies, const btVector3 &scale);
 
 protected:
 	void setup(const char *file, const char *mtlDir, const char *texDir);

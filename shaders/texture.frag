@@ -6,12 +6,6 @@ uniform vec3 ambient, diffuse, specular, emission;
 uniform vec3 environment, light, lightIntensity;
 uniform sampler2D sampler;
 
-out vec4 FragColor;
-uniform float ambient, diffuse, specular, shininess;
-uniform vec3 light;
-uniform vec4 colour;
-uniform sampler2D sampler;
-
 in VERTEX {
 	vec3 normal;
 	vec3 viewer;
@@ -20,20 +14,26 @@ in VERTEX {
 
 void main(void)
 {
-	vec4 colour = texture(sampler, vertex.texCoord);
-
 	vec3 normal = vertex.normal;
+	vec4 tex = vec4(diffuse, 1.0) * texture(sampler, vertex.texCoord);
+	if (tex.a < 0.5)
+		discard;
+	else
+		tex.a = 1.0;
 
-	vec3 colourA = ambient * colour.rgb;
+	vec3 colour = tex.rgb * ambient * environment;
 
 	float cos_theta = max(dot(light, normal), 0.0);
-	colourA += diffuse * cos_theta * colour.rgb;
+	colour += tex.rgb * cos_theta * lightIntensity;
+
+	cos_theta = max(dot(vertex.viewer, normal), 0.0);
+	colour += emission * cos_theta * lightIntensity;
 
 	if (cos_theta != 0.0) {
-		//vec3 reflect = 2.0 * dot(light, normal) * normal - light;
+		//vec3 ref = 2.0 * dot(light, normal) * normal - light;
 		vec3 ref = reflect(-light, normal);
-		colourA += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess), 1.0);
+		colour += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess / 10.0), 1.0) * lightIntensity;
 	}
 
-	FragColor = vec4(min(colourA, vec3(1.0)), colour.a);
+	FragColor = vec4(min(colour, vec3(1.0)), tex.a);
 }

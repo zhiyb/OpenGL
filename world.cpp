@@ -13,8 +13,23 @@
 using namespace std;
 using namespace glm;
 
+status_t status;
 matrix_t matrix;
 environment_t environment;
+
+void status_t::pause(bool e)
+{
+	if (e) {
+		if (!status.run)
+			return;
+		pauseStart = glfwGetTime();
+	} else {
+		if (status.run)
+			return;
+		pauseDuration += glfwGetTime() - pauseStart;
+	}
+	status.run = !status.run;
+}
 
 void matrix_t::update()
 {

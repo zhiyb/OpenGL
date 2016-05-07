@@ -29,72 +29,17 @@ GLFWwindow *window;
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
-static struct Status {
-	bool run;
-	double animation, pauseStart, pauseDuration;
-	enum {CameraMode, TourMode} mode;
-} status;
-
-#ifndef MODELS
 struct object_t {
-	bool culling;
-	float rotation;
-	vec3 scale, offset, rotationAxis;
+	bool culling, bullet;
+	vec3 scale, offset;
 	Object *model;
 };
 vector<object_t> objects;
-#else
-struct Model {
-	struct Data {
-		enum {Wireframe, Solid, Textured} type;
-		union {
-			struct {
-				GLfloat colour[4];
-			};
-			GLuint texture;
-		};
-		btScalar scale;
-	};
-	struct Init {
-		struct Data modelData;
-		btScalar restitution;
-		btScalar mass;
-		btVector3 position;
-		btVector3 velocity;
-	};
-	vector<Data> data;
-#ifdef BULLET
-	vector<btRigidBody *> bodies;
-#endif
-	Object *object;
-};
-vector<Model *> models;
-#endif
 
 void quit();
 
-#ifdef MODELS
-void setupModelData(Model *model, const Model::Init *init, int size)
-{
-	while (size--) {
-#ifdef BULLET
-		btTransform t = btTransform(btQuaternion(0, 0, 0, 1), init->position);
-		btRigidBody *rigidBody = model->object->createRigidBody(init->mass, init->modelData.scale, t);
-		rigidBody->setRestitution(init->restitution);
-		rigidBody->setFriction(FRICTION);
-		rigidBody->setLinearVelocity(init->velocity);
-		dynamicsWorld->addRigidBody(rigidBody);
-		model->bodies.push_back(rigidBody);
-#endif
-		model->data.push_back(init->modelData);
-		init++;
-	}
-}
-#endif
-
 void setupObjects()
 {
-#ifndef MODELS
 	ifstream datafs(DATA_WAVEFRONT);
 	if (!datafs) {
 		cerr << "Cannot open model description file " DATA_WAVEFRONT << endl;
@@ -111,7 +56,7 @@ void setupObjects()
 		if (!ss)
 			continue;
 		ss >> obj.culling;
-		ss >> obj.scale >> obj.offset >> obj.rotation >> obj.rotationAxis;
+		ss >> obj.scale >> obj.offset >> obj.bullet;
 		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
 		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
 		if (!model)
@@ -122,45 +67,18 @@ void setupObjects()
 		}
 		obj.model = model;
 		objects.push_back(obj);
+
+		if (obj.bullet) {
+			vector<btRigidBody *> rigidBodies;
+			model->createRigidBody(&rigidBodies, to_btVector3(obj.scale));
+			for (btRigidBody *rigidBody: rigidBodies) {
+				rigidBody->getWorldTransform().setOrigin(to_btVector3(obj.offset));
+				bulletAddRigidBody(rigidBody, BULLET_GROUND);
+			}
+		}
 	}
-#else
-	Model *model;
-
-	static const Model::Init sphereModels[] = {
-		// modelData{type, {colour/texture}, scale},
-		// restitution, mass, position, velocity
-		{{Model::Data::Textured, {.texture = TEXTURE_S2}, 0.25f},
-		 RESTITUTION, 0.25f, btVector3(0.f, 0.8f, 0.f), btVector3(0.f, 5.f, 0.f)},
-		{{Model::Data::Wireframe, {0.f, 1.f, 0.f, 1.f}, 0.125f},
-		 RESTITUTION, 0.125f, btVector3(0.f, 0.f, 0.8f), btVector3(0.f, 0.f, 5.f)},
-		{{Model::Data::Solid, {0.f, 0.f, 1.f, 1.f}, 0.0625f},
-		 RESTITUTION, 0.0625f, btVector3(0.8f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
-	};
-
-	model = new Model;
-	model->object = new Sphere(32);
-	model->object->setup();
-	setupModelData(model, sphereModels, ARRAY_SIZE(sphereModels));
-	models.push_back(model);
-
-	static const Model::Init cubeModels[] = {
-		// modelData{type, {colour/texture}, scale},
-		// restitution, mass, position, velocity
-		{{Model::Data::Textured, {.texture = TEXTURE_CUBE}, 0.2f},
-		 RESTITUTION, 0.2f, btVector3(0.5f, 0.f, 0.f), btVector3(5.f, 0.f, 0.f)},
-		{{Model::Data::Solid, {1.f, 1.f, 0.f, 1.f}, 0.1f},
-		 RESTITUTION, 0.1f, btVector3(-0.5f, 0.f, 0.f), btVector3(-5.f, 0.f, 0.f)},
-	};
-
-	model = new Model;
-	model->object = new Cube();
-	model->object->setup();
-	setupModelData(model, cubeModels, ARRAY_SIZE(cubeModels));
-	models.push_back(model);
-#endif
 }
 
-#if !defined(MODELS) || !defined(BULLET)
 static void render()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -176,13 +94,8 @@ static void render()
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 
-#ifndef MODELS
 	for (object_t &obj: objects) {
-		if (obj.rotation == 0.f)
-			matrix.model = mat4();
-		else
-			matrix.model = rotate(mat4(), obj.rotation, obj.rotationAxis);
-		matrix.model = translate(matrix.model, obj.offset);
+		matrix.model = translate(mat4(), obj.offset);
 		matrix.model = scale(matrix.model, obj.scale);
 		matrix.update();
 		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
@@ -196,133 +109,7 @@ static void render()
 		obj.model->bind();
 		obj.model->render();
 	}
-#else
-	for (Model *model: models) {
-		model->object->bind();
-		for (unsigned int i = 0; i != model->data.size(); i++) {
-			Model::Data &data = model->data[i];
-
-			if (data.type != Model::Data::Solid)
-				continue;
-			// Step model physics
-			//matrix.model = bulletStep(model->bodies[i]);
-			//matrix.model = scale(matrix.model, vec3(data.scale));
-			matrix.model = mat4();
-
-			matrix.update();
-			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
-			model->object->renderSolid();
-		}
-	}
-#endif
 }
-#else
-void scene()
-{
-	// Render solid objects
-	glUseProgram(programs[PROGRAM_LIGHTING].id);
-	uniforms = programs[PROGRAM_LIGHTING].uniforms;
-
-	vec3 light(0.f, 0.f, 1.f);	// Light direction
-	light = vec3(transpose(inverse(matrix.view)) * vec4(light, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position, 0.f));
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
-
-	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.5f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 10.f);
-
-#if 1
-	// Render arena
-	matrix.model = scale(mat4(), vec3(-arena.scale));
-	matrix.update();
-	matrix.normal = mat3(scale(mat4(matrix.normal), vec3(-1.f)));
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&arena.colour);
-	arena.object->bind();
-	arena.object->renderSolid();
-#endif
-
-	for (Model *model: models) {
-		model->object->bind();
-		for (unsigned int i = 0; i != model->data.size(); i++) {
-			Model::Data &data = model->data[i];
-
-			if (data.type != Model::Data::Solid)
-				continue;
-			// Step model physics
-			matrix.model = bulletStep(model->bodies[i]);
-			matrix.model = scale(matrix.model, vec3(data.scale));
-
-			matrix.update();
-			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
-			model->object->renderSolid();
-		}
-	}
-
-	// Render textured objects
-	glUseProgram(programs[PROGRAM_TEXTURE].id);
-	uniforms = programs[PROGRAM_TEXTURE].uniforms;
-
-	glUniform3fv(uniforms[UNIFORM_LIGHT], 1, (GLfloat *)&light);
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
-
-	// Material properties
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_DIFFUSE], 1.f);
-	glUniform1f(uniforms[UNIFORM_SPECULAR], 0.5f);
-	glUniform1f(uniforms[UNIFORM_SPECULARPOWER], 10.f);
-
-#if 0
-	// Render textured arena
-	matrix.model = scale(mat4(), vec3(-arena.scale));
-	matrix.update();
-	matrix.normal = mat3(scale(mat4(matrix.normal), vec3(-1.f)));
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CUBE].texture);
-	arena.object->bind();
-	arena.object->renderSolid();
-#endif
-
-	for (Model *model: models) {
-		model->object->bind();
-		for (unsigned int i = 0; i != model->data.size(); i++) {
-			Model::Data &data = model->data[i];
-
-			if (data.type != Model::Data::Textured)
-				continue;
-			// Step model physics
-			matrix.model = bulletStep(model->bodies[i]);
-			matrix.model = scale(matrix.model, vec3(data.scale));
-
-			matrix.update();
-			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-			glBindTexture(GL_TEXTURE_2D, textures[data.texture].texture);
-			model->object->renderSolid();
-		}
-	}
-}
-#endif
 
 void step()
 {
@@ -331,7 +118,7 @@ void step()
 	status.animation = time;
 	camera.updateCB(diff);
 
-	if (status.run) {
+	if (status.run && diff > 0.f) {
 		//clog << __func__ << ": " << diff << endl;
 		time -= status.pauseDuration;
 		bulletUpdate(diff);
@@ -371,7 +158,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	}
 
-	if (status.mode == Status::TourMode) {
+	if (status.mode == status_t::TourMode) {
 		if (key == GLFW_KEY_E)	// Exit the tour mode (optional)
 			tour(false);
 		return;
@@ -384,42 +171,13 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		return;
 	case GLFW_KEY_SPACE:
 		// Stop all motion (optional)
-		if (status.run)
-			status.pauseStart = glfwGetTime();
-		else
-			status.pauseDuration += glfwGetTime() - status.pauseStart;
-		status.run = !status.run;
+		status.pause(status.run);
 		return;
 	case GLFW_KEY_R:
 		// Reset all animation (optional)
 		status.pauseDuration = glfwGetTime();
 		status.run = true;
 		camera.reset();
-		return;
-	case GLFW_KEY_P:
-		// Move to predefined location (screen shot)
-		camera.backup();
-		camera.setPosition(CAMERA_V0_POS);
-		camera.setRotation(CAMERA_V0_ROT);
-		camera.setSpeed(0.f);
-		return;
-	case GLFW_KEY_L:
-		// Alternative view point 1 (optional)
-		camera.backup();
-		camera.setPosition(CAMERA_V1_POS);
-		camera.setRotation(CAMERA_V1_ROT);
-		camera.setSpeed(0.f);
-		return;
-	case GLFW_KEY_O:
-		// Alternative view point 2 (overhead, optional)
-		camera.backup();
-		camera.setPosition(CAMERA_V2_POS);
-		camera.setRotation(CAMERA_V2_ROT);
-		camera.setSpeed(0.f);
-		return;
-	case GLFW_KEY_M:
-		// Return to last position of mobile camera
-		camera.restore();
 		return;
 	}
 
@@ -541,7 +299,7 @@ int main(int /*argc*/, char */*argv*/[])
 	environment.setup();
 	setupObjects();
 	status.run = true;
-	status.mode = Status::CameraMode;
+	status.mode = status_t::CameraMode;
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
@@ -564,7 +322,7 @@ int main(int /*argc*/, char */*argv*/[])
 		if (now - past > 3) {
 			float fps = (float)count / (now - past);
 			char buf[32];
-			sprintf(buf, "%g FPS [%s]", fps, status.mode == Status::CameraMode ? "Camera" : "Tour");
+			sprintf(buf, "%g FPS [%s]", fps, status.mode == status_t::CameraMode ? "Camera" : "Tour");
 			glfwSetWindowTitle(window, buf);
 			count = 0;
 			past = now;

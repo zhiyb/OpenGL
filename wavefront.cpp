@@ -9,6 +9,9 @@
 #include "helper.h"
 #include "wavefront.h"
 
+#include <BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h>
+#include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
+
 //#define WAVEFRONT_DEBUG
 
 using namespace std;
@@ -65,6 +68,23 @@ void Wavefront::render()
 		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
 		//checkError("Wavefront: draw elements");
 		shapeID++;
+	}
+}
+
+void Wavefront::createRigidBody(vector<btRigidBody *> *rigidBodies, const btVector3 &scale)
+{
+	for (const shape_t &shape: shapes) {
+		const mesh_t &mesh = shape.mesh;
+		btTriangleIndexVertexArray *btMesh = new btTriangleIndexVertexArray(
+					mesh.indices.size() / 3,
+					(int *)mesh.indices.data(), 3 * sizeof(GLuint),
+					mesh.positions.size(),
+					(btScalar *)mesh.positions.data(), 3 * sizeof(float));
+		btBvhTriangleMeshShape *btShape = new btBvhTriangleMeshShape(btMesh, true);
+		btShape->setLocalScaling(scale);
+		btDefaultMotionState* motionState = new btDefaultMotionState;
+		btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0, motionState, btShape);
+		rigidBodies->push_back(new btRigidBody(rigidBodyCI));
 	}
 }
 
@@ -212,14 +232,3 @@ void Wavefront::debugPrint()
 		// 10 Casts shadows onto invisible surfaces
 	}
 }
-
-#if 0
-GLInstanceGraphicsShape* LoadMeshFromObj(const char* relativeFileName, const char* materialPrefixPath)
-{
-	std::vector<tinyobj::shape_t> shapes;
-	std::string err = tinyobj::LoadObj(shapes, relativeFileName, materialPrefixPath);
-
-	GLInstanceGraphicsShape* gfxShape = btgCreateGraphicsShapeFromWavefrontObj(shapes);
-	return gfxShape;
-}
-#endif

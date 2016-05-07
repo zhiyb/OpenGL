@@ -1,7 +1,7 @@
-# Model path, material path, texture path, bool double-sided, vec3 scale, vec3 offset, float rotation, vec3 rotationAxis
+# Model path, material path, texture path, bool double-sided, vec3 scale, vec3 offset, bool bullet
 
 # https://www.cgtrader.com/free-3d-models/architectural-exterior/arena-stadium/dunwell-woodfield-stadium--2
-models/Dunwell/model.obj models/Dunwell/ models/Dunwell/model/	1	1 1 1	0 0.15 0	0
+models/Dunwell/model.obj models/Dunwell/ models/Dunwell/model/	1	1 1 1	0 0.12 0	1
 
 # http://kiomodel3.sblo.jp/article/23486819.html
 models/miku/model.obj models/miku/ models/miku/textures/	0	0.2 0.2 0.2	0.2 0.149 0	0
