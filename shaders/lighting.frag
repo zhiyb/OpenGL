@@ -21,8 +21,8 @@ void main(void)
 	colourA += diffuse * cos_theta * colour.rgb;
 
 	if (cos_theta != 0.0) {
-		vec3 ref = 2.0 * dot(light, normal) * normal - light;
-		//vec3 ref = reflect(-light, normal);
+		//vec3 ref = 2.0 * dot(light, normal) * normal - light;
+		vec3 ref = reflect(-light, normal);
 		colourA += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess), 1.0);
 	}
 

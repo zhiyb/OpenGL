@@ -206,7 +206,7 @@ GLuint setupPrograms()
 		},
 		[PROGRAM_TEXTURE] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "texture.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "wavefront.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_WAVEFRONT] = {
@@ -244,6 +244,8 @@ GLuint setupTextures()
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_WHITE]		= {0},
+		// sphere.png: Adapted from http://paulbourke.net/texture_colour/perlin/
+		[TEXTURE_CAMERA]	= {TEXTURE_PATH "sphere.png"},
 		//[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
 		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
 		// glow1.png: http://vterrain.org/Atmosphere/

@@ -14,6 +14,9 @@ public:
 	void cursorCB(double xpos, double ypos);
 	void updateCB(float time);
 
+	void setup();
+	void render();
+
 	void backup();
 	void restore();
 
@@ -24,14 +27,13 @@ public:
 	void setPosition(const glm::vec3 pos) {this->pos = pos;}
 	void setRotation(const glm::quat rot) {this->rot = rot;}
 	void setSpeed(float speed) {this->speed = speed;}
+	glm::vec3 &position() {return pos;}
 	glm::vec3 position() const {return pos;}
 	glm::quat rotation() const {return rot;}
 	glm::vec3 right() const {return rot * glm::vec3(1.f, 0.f, 0.f);}
 	glm::vec3 upward() const {return rot * glm::vec3(0.f, 1.f, 0.f);}
 	glm::vec3 forward() const {return rot * glm::vec3(0.f, 0.f, -1.f);}
 	glm::mat4 view() const;
-	glm::vec3 &viewerPojection() {return viewer;}
-	glm::vec3 &lightProjection() {return light;}
 
 	void print();
 
@@ -46,7 +48,7 @@ private:
 	glm::quat rot;
 	float speed, movement;
 
-	glm::vec3 viewer, light;
+	class Sphere *sphere;
 
 	struct {
 		bool pressed;

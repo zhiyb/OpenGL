@@ -1,7 +1,6 @@
 #version 330
 
 out vec4 FragColor;
-uniform float textured;
 uniform float shininess;
 uniform vec3 ambient, diffuse, specular, emission;
 uniform vec3 environment, light, lightIntensity;
@@ -31,8 +30,8 @@ void main(void)
 	colour += emission * cos_theta * lightIntensity;
 
 	if (cos_theta != 0.0) {
-		vec3 ref = 2.0 * dot(light, normal) * normal - light;
-		//vec3 ref = reflect(-light, normal);
+		//vec3 ref = 2.0 * dot(light, normal) * normal - light;
+		vec3 ref = reflect(-light, normal);
 		colour += specular * min(pow(max(dot(vertex.viewer, ref), 0.0), shininess / 10.0), 1.0) * lightIntensity;
 	}
 

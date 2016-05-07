@@ -17,9 +17,8 @@ environment_t environment;
 
 void matrix_t::update()
 {
-	model = mat4_cast(world.rotation) * model;
 	mvp = projection * view * model;
-	normal = mat3(transpose(inverse(view * model)));
+	normal = mat3(transpose(inverse(model)));
 }
 
 environment_t::environment_t()

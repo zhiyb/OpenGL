@@ -17,7 +17,7 @@ void main(void)
 {
 	gl_Position = mvpMatrix * vec4(position, 1.0);
 	vertex.normal = normalize(normalMatrix * normal);
-	vertex.viewer = normalize(viewer - vec3(modelMatrix * vec4(position, 0.0)));
+	vertex.viewer = normalize(viewer - vec3(modelMatrix * vec4(position, 1.0)));
 	vertex.texCoord = vec2(texCoord.x, 1.0 - texCoord.y);
 	//vertex.texCoord = texCoord;
 }

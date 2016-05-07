@@ -15,10 +15,6 @@ public:
 	glm::mat4 model, view, projection;
 	glm::mat4 mvp;
 	glm::mat3 normal;
-
-	struct {
-		glm::quat rotation;
-	} world;
 } matrix;
 
 extern class environment_t

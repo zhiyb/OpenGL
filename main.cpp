@@ -222,16 +222,15 @@ static void render()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	environment.render();
+	camera.render();
 
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
-	checkError("switching to PROGRAM_WAVEFRONT");
+	//checkError("switching to PROGRAM_WAVEFRONT");
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
-	vec3 light = vec3(transpose(inverse(matrix.view)) * vec4(environment.light.direction, 0.f));
-	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&light);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&environment.light.direction);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
-	vec3 viewer = vec3(transpose(inverse(matrix.view)) * vec4(camera.position(), 0.f));
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&viewer);
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 
 #ifndef MODELS
 	for (object_t &obj: objects) {
@@ -280,45 +279,6 @@ static void render()
 #else
 void scene()
 {
-	// Render wireframes
-	glUseProgram(programs[PROGRAM_BASIC].id);
-	GLint *uniforms = programs[PROGRAM_BASIC].uniforms;
-
-#if 1
-	// Render arena frame
-	matrix.model = scale(mat4(), vec3(arena.scale));
-	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-	vec4 colour(0.f, 0.f, 0.f, 1.f);
-	glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&colour);
-	arena.object->bind();
-	arena.object->renderWireframe();
-#endif
-
-	for (Model *model: models) {
-		model->object->bind();
-		for (unsigned int i = 0; i != model->data.size(); i++) {
-			Model::Data &data = model->data[i];
-
-			if (data.type != Model::Data::Wireframe)
-				continue;
-			// Step model physics
-			matrix.model = bulletStep(model->bodies[i]);
-			matrix.model = scale(matrix.model, vec3(data.scale));
-
-			matrix.update();
-			glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-			glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-			glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-			glUniform4fv(uniforms[UNIFORM_COLOUR], 1, (GLfloat *)&data.colour);
-			model->object->renderWireframe();
-		}
-	}
-
 	// Render solid objects
 	glUseProgram(programs[PROGRAM_LIGHTING].id);
 	uniforms = programs[PROGRAM_LIGHTING].uniforms;
@@ -645,6 +605,7 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 #endif
 
+	camera.setup();
 	environment.setup();
 	environment.load();
 	setupObjects();

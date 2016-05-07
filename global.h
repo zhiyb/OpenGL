@@ -25,11 +25,6 @@
 #define CULL_FACE
 #define ALPHA_BLEND
 
-#ifdef BULLET
-#define CAMERA_INIT_POS	glm::vec3(0.f, 0.f, 1.f + arena.scale + 3.f)
-#else
-#define CAMERA_INIT_POS	glm::vec3(0.f, 1.f, 1.f + 3.f)
-#endif
 // P
 #define CAMERA_V0_POS	glm::vec3(-0.266186, 0.207137, 0.350882)
 #define CAMERA_V0_ROT	glm::quat(0.864666, -0.0412326, -0.50014, -0.0227479)
@@ -80,6 +75,7 @@ enum {
 // Textures
 enum {
 	TEXTURE_WHITE,
+	TEXTURE_CAMERA,
 	//TEXTURE_SPHERE,
 	//TEXTURE_FIREMAP,
 	TEXTURE_GLOW,

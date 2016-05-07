@@ -1,6 +1,12 @@
 #version 330
 
 out vec4 FragColor;
+uniform float shininess;
+uniform vec3 ambient, diffuse, specular, emission;
+uniform vec3 environment, light, lightIntensity;
+uniform sampler2D sampler;
+
+out vec4 FragColor;
 uniform float ambient, diffuse, specular, shininess;
 uniform vec3 light;
 uniform vec4 colour;
