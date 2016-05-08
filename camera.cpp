@@ -188,6 +188,7 @@ void Camera::stop()
 
 void Camera::render()
 {
+#ifndef SUBMISSION
 	glEnable(GL_CULL_FACE);
 	if (status.shadow) {
 		shadowMatrix.model = modelMatrix;
@@ -222,6 +223,7 @@ void Camera::render()
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
 	sphere->bind();
 	sphere->render();
+#endif
 }
 
 void Camera::backup()

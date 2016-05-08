@@ -4,7 +4,6 @@ tiny_obj_loader.h	https://github.com/syoyo/tinyobjloader
 
 Models:
 models/Dunwell/model.obj	https://www.cgtrader.com/free-3d-models/architectural-exterior/arena-stadium/dunwell-woodfield-stadium--2
-models/miku/model.obj	http://kiomodel3.sblo.jp/article/23486819.html
 models/nanoMiku/nanoMiku.obj	http://mqdl.jpn.org/public
 models/nanoRin/nanoRin.obj	http://mqdl.jpn.org/public
 models/nanoLen/nanoLen.obj	http://mqdl.jpn.org/public

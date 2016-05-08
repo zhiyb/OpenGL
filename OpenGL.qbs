@@ -71,7 +71,8 @@ CppApplication {
         name: "Miscellaneous files"
         files: [
             "config.lua",
-            "README.md",
+            "screenshot.jpg",
+            "readme.txt",
             "credits.txt",
         ]
     }
