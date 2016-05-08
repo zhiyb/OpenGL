@@ -4,8 +4,6 @@
 #include <map>
 #include "global.h"
 
-#include <btBulletDynamicsCommon.h>
-
 #define BULLET_GROUND	"Ground"
 #define BULLET_CAMERA	"Camera"
 
@@ -23,6 +21,7 @@ void bulletCleanup();
 void bulletUpdate(double diff);
 void bulletAddRigidBody(btRigidBody *rigidBody);
 void bulletAddRigidBody(btRigidBody *rigidBody, const char *name);
+void bulletUprightConstraint(btRigidBody *body);
 
 btVector3 bulletGetOrigin(btRigidBody *rigidBody);
 glm::mat4 bulletGetMatrix(btRigidBody *rigidBody);

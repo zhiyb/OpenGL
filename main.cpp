@@ -38,17 +38,6 @@ struct shadow_t {
 
 Square *square;
 
-struct object_t {
-	string name;
-	bool culling;
-	vec3 scale, offset;
-	bool bullet;
-	float mass;
-	btRigidBody *rigidBody;
-	Object *model;
-};
-vector<object_t> objects;
-
 void quit();
 
 static void setupShadowStorage()
@@ -75,57 +64,7 @@ static void setupShadowStorage()
 void setupObjects()
 {
 	square = new Square;
-
-	ifstream datafs(DATA_WAVEFRONT);
-	if (!datafs) {
-		cerr << "Cannot open model description file " DATA_WAVEFRONT << endl;
-		return;
-	}
-	string line;
-	while (getline(datafs, line)) {
-		if (line.empty() || line.at(0) == '#')
-			continue;
-		istringstream ss(line);
-		string modelPath, mtlPath, texPath;
-		object_t obj;
-		ss >> obj.name >> modelPath >> mtlPath >> texPath;
-		if (!ss)
-			continue;
-		ss >> obj.culling >> obj.scale >> obj.offset;
-		ss >> obj.bullet >> obj.mass;
-		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
-		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
-		if (!model)
-			continue;
-		if (!model->isValid()) {
-			delete model;
-			continue;
-		}
-		obj.model = model;
-
-		obj.rigidBody = 0;
-		if (!obj.bullet) {
-			objects.push_back(obj);
-			continue;
-		}
-
-		if (!obj.mass) {	// Stationary object
-			vector<btRigidBody *> rigidBodies;
-			model->createStaticRigidBody(&rigidBodies, to_btVector3(obj.scale));
-			for (btRigidBody *rigidBody: rigidBodies) {
-				btVector3 origin = rigidBody->getWorldTransform().getOrigin();
-				rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
-				bulletAddRigidBody(rigidBody, BULLET_GROUND);
-			}
-		} else {		// Use bounding box
-			obj.rigidBody = model->createRigidBody(to_btVector3(obj.scale), obj.mass);
-			btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
-			obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
-			bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
-			obj.offset = -model->boundingOrigin() * obj.scale;
-		}
-		objects.push_back(obj);
-	}
+	loadObjects();
 }
 
 static void renderObjects()
@@ -146,22 +85,23 @@ static void renderObjects()
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 
-	for (object_t &obj: objects) {
-		matrix.model = translate(mat4(), obj.offset);
+	for (const pair<string, object_t> &pair: objects) {
+		const object_t &obj = pair.second;
+		matrix.model = translate(mat4(), obj.position);
 		if (obj.rigidBody)
 			matrix.model = bulletGetMatrix(obj.rigidBody) * matrix.model;
-		matrix.model = scale(matrix.model, obj.scale);
+		matrix.model = scale(matrix.model, obj.model->scale);
 		matrix.update();
 		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 		glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-		if (obj.culling)
+		if (obj.model->culling)
 			glEnable(GL_CULL_FACE);
 		else
 			glDisable(GL_CULL_FACE);
-		obj.model->bind();
-		obj.model->render();
+		obj.model->model->bind();
+		obj.model->model->render();
 	}
 }
 
@@ -177,20 +117,21 @@ static void renderEnvironmentShadow()
 	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
 	//environment.renderShadow();
 
-	for (object_t &obj: objects) {
-		shadowMatrix.model = translate(mat4(), obj.offset);
+	for (const pair<string, object_t> &pair: objects) {
+		const object_t &obj = pair.second;
+		shadowMatrix.model = translate(mat4(), obj.position);
 		if (obj.rigidBody)
 			shadowMatrix.model = bulletGetMatrix(obj.rigidBody) * shadowMatrix.model;
-		shadowMatrix.model = scale(shadowMatrix.model, obj.scale);
+		shadowMatrix.model = scale(shadowMatrix.model, obj.model->scale);
 		shadowMatrix.update();
 		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
 
-		if (obj.culling)
+		if (obj.model->culling)
 			glEnable(GL_CULL_FACE);
 		else
 			glDisable(GL_CULL_FACE);
-		obj.model->bind();
-		obj.model->render();
+		obj.model->model->bind();
+		obj.model->model->render();
 	}
 
 	static const mat4 scaleBiasMatrix = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
@@ -267,14 +208,15 @@ void report()
 	clog << "****** Report at " << glfwGetTime() << " seconds ******" << endl;
 	environment.print();
 	camera.print();
-	for (object_t &obj: objects) {
+	for (const pair<string, object_t> &pair: objects) {
+		const object_t &obj = pair.second;
 		if (!obj.rigidBody)
 			continue;
 		btTransform trans;
 		obj.rigidBody->getMotionState()->getWorldTransform(trans);
-		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.scale;
+		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.model->scale;
 		quat rot = from_btQuaternion(trans.getRotation());
-		clog << obj.name << "\t@" << pos << ", " << rot << endl;
+		clog << obj.id << "\t@" << pos << ", " << rot << endl;
 	}
 }
 
@@ -320,6 +262,7 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	case GLFW_KEY_SPACE:
 		// Stop all motion (optional)
 		status.pause(status.run);
+		camera.setSpeed(0.f);
 		return;
 	case GLFW_KEY_R:
 		// Reset all animation (optional)
@@ -380,21 +323,7 @@ void quit()
 {
 	glfwTerminate();
 
-	// Free memory
-#ifndef MODELS
-	for (object_t &obj: objects)
-		delete obj.model;
-#else
-	for (Model *model: models) {
-#ifdef BULLET
-		for (btRigidBody *body: model->bodies) {
-			dynamicsWorld->removeRigidBody(body);
-			delete body;
-		}
-#endif
-		delete model->object;
-	}
-#endif
+	cleanupModels();
 	bulletCleanup();
 	exit(0);
 }
@@ -473,9 +402,10 @@ int main(int /*argc*/, char */*argv*/[])
 #endif
 
 	loadRecords();
+	loadModels();
+	setupObjects();
 	camera.setup();
 	environment.setup();
-	setupObjects();
 	setupShadowStorage();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);

@@ -9,12 +9,17 @@
 #include "stb_image.h"
 
 #include "helper.h"
+#include "bullet.h"
 #include "global.h"
+#include "wavefront.h"
 
 //#define DEBUG_UNIFORMS
 
 using namespace std;
 using namespace glm;
+
+unordered_map<string, model_t> models;
+unordered_map<std::string, object_t> objects;
 
 string basename(string &path)
 {
@@ -322,4 +327,97 @@ texture_t loadTexture(const char *path)
 		tex.id = 0;
 	}
 	return tex;
+}
+
+void loadModels()
+{
+	ifstream datafs(DATA_MODELS);
+	if (!datafs) {
+		cerr << "Cannot open model description file " DATA_MODELS << endl;
+		return;
+	}
+	string line;
+	while (getline(datafs, line)) {
+		if (line.empty() || line.at(0) == '#')
+			continue;
+		istringstream ss(line);
+		string modelPath, mtlPath, texPath;
+		model_t model;
+		ss >> model.id >> modelPath >> mtlPath >> texPath;
+		if (!ss)
+			continue;
+		ss >> model.culling >> model.scale;
+		ss >> model.bullet >> model.mass >> model.upright;
+		clog << "Model " << modelPath << " loading..." << endl;
+		model.model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
+		if (!model.model)
+			continue;
+		if (!model.model->isValid()) {
+			delete model.model;
+			continue;
+		}
+		models[model.id] = model;
+	}
+}
+
+void cleanupModels()
+{
+	for (pair<string, model_t> model: models)
+		delete model.second.model;
+}
+
+void loadObjects()
+{
+	ifstream datafs(DATA_OBJECTS);
+	if (!datafs) {
+		cerr << "Cannot open object description file " DATA_OBJECTS << endl;
+		return;
+	}
+	string line;
+	while (getline(datafs, line)) {
+		if (line.empty() || line.at(0) == '#')
+			continue;
+		istringstream ss(line);
+		object_t obj;
+		string type;
+		ss >> obj.id >> type;
+		if (!ss)
+			continue;
+
+		if (type == "Model") {
+			string id;
+			ss >> id >> obj.position;
+			if (!ss)
+				continue;
+			model_t &model = models[id];
+			if (!model.model || !model.model->isValid())
+				continue;
+
+			//clog << "Object " << obj.id << " loading..." << endl;
+			obj.model = &model;
+			obj.rigidBody = 0;
+			if (!model.bullet) {
+				objects[obj.id] = obj;
+				continue;
+			}
+			if (!model.mass) {	// Stationary object
+				vector<btRigidBody *> rigidBodies;
+				model.model->createStaticRigidBody(&rigidBodies, to_btVector3(model.scale));
+				for (btRigidBody *rigidBody: rigidBodies) {
+					btVector3 origin = rigidBody->getWorldTransform().getOrigin();
+					rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.position));
+					bulletAddRigidBody(rigidBody, BULLET_GROUND);
+				}
+			} else {		// Use bounding box
+				obj.rigidBody = model.model->createRigidBody(to_btVector3(model.scale), model.mass);
+				btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
+				obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.position));
+				bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
+				obj.position = -model.model->boundingOrigin() * model.scale;
+				if (obj.model->upright)
+					bulletUprightConstraint(obj.rigidBody);
+			}
+			objects[obj.id] = obj;
+		}
+	}
 }

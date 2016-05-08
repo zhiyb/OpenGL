@@ -28,6 +28,7 @@ public:
 
 	void setPosition(const glm::vec3 pos);
 	void setRotation(const glm::quat rot) {this->rot = rot;}
+	void setSpeed(const float speed) {this->speed = speed;}
 	glm::vec3 &position() {return pos;}
 	glm::vec3 position() const {return pos;}
 	glm::quat rotation() const {return rot;}

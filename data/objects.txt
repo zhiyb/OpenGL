@@ -1,0 +1,18 @@
+# Objects
+
+# Name	Type	Parameters
+# Type:Model	ID	Position
+
+Arena	Model	Dunwell	0 0.12 0
+
+Miku	Model	Miku	0.3 0.13 0
+nMiku0	Model	nMiku	0 0.13 0
+nRin0	Model	nRin	-0.2 0.13 0
+nLen0	Model	nLen	-0.4 0.13 0
+nGUMI0	Model	nGUMI	-0.6 0.13 0
+
+nMiku1	Model	nMiku	-0.6 0.13 0.2
+nMiku2	Model	nMiku	-0.4 0.13 0.2
+nMiku3	Model	nMiku	-0.2 0.13 0.2
+nMiku4	Model	nMiku	0 0.13 0.2
+nMiku5	Model	nMiku	0.2 0.13 0.2

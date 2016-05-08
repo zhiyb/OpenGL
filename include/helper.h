@@ -2,12 +2,33 @@
 #define HELPER_H
 
 #include <iostream>
+#include <string>
+#include <unordered_map>
 #include "global.h"
 
 struct shader_t {
 	GLenum type;
 	const char *path;
 };
+
+struct model_t {
+	model_t() : model(0) {}
+	class Wavefront *model;
+	std::string id;
+	glm::vec3 scale;
+	float mass;
+	bool culling;
+	bool bullet, upright;
+};
+extern std::unordered_map<std::string, model_t> models;
+
+struct object_t {
+	std::string id;
+	glm::vec3 position;
+	model_t *model;
+	btRigidBody *rigidBody;
+};
+extern std::unordered_map<std::string, object_t> objects;
 
 std::string basename(std::string &path);
 static inline std::istream &operator>>(std::istream &stream, glm::vec3 &vec)
@@ -36,5 +57,9 @@ GLuint setupPrograms();
 GLuint setupTextures();
 
 texture_t loadTexture(const char *path);
+
+void loadModels();
+void cleanupModels();
+void loadObjects();
 
 #endif // HELPER_H

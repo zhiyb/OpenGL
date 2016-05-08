@@ -55,21 +55,6 @@ void bulletInit()
 	dynamicsWorld->setGravity(to_btVector3(bullet.gravity));
 }
 
-btVector3 bulletGetOrigin(btRigidBody *rigidBody)
-{
-	btTransform trans;
-	rigidBody->getMotionState()->getWorldTransform(trans);
-	return trans.getOrigin();
-}
-
-mat4 bulletGetMatrix(btRigidBody *rigidBody) {
-	btTransform trans;
-	rigidBody->getMotionState()->getWorldTransform(trans);
-	mat4 matrix;
-	trans.getOpenGLMatrix((btScalar *)&matrix);
-	return matrix;
-}
-
 void bulletCleanup()
 {
 	for (btRigidBody *rigidBody: rigidBodys) {
@@ -81,6 +66,12 @@ void bulletCleanup()
 	delete dispatcher;
 	delete collisionConfiguration;
 	delete broadphase;
+}
+
+void bulletUpdate(double diff)
+{
+	double step = 1.f / 180.f;
+	dynamicsWorld->stepSimulation(diff == 0.f ? step : diff, 60, step);
 }
 
 void bulletAddRigidBody(btRigidBody *rigidBody)
@@ -98,8 +89,23 @@ void bulletAddRigidBody(btRigidBody *rigidBody, const char *name)
 	bulletAddRigidBody(rigidBody);
 }
 
-void bulletUpdate(double diff)
+void bulletUprightConstraint(btRigidBody *body)
 {
-	double step = 1.f / 180.f;
-	dynamicsWorld->stepSimulation(diff == 0.f ? step : diff, 60, step);
+	//body->setLinearFactor(btVector3(1, 0, 1));
+	body->setAngularFactor(btVector3(0, 1, 0));
+}
+
+btVector3 bulletGetOrigin(btRigidBody *rigidBody)
+{
+	btTransform trans;
+	rigidBody->getMotionState()->getWorldTransform(trans);
+	return trans.getOrigin();
+}
+
+mat4 bulletGetMatrix(btRigidBody *rigidBody) {
+	btTransform trans;
+	rigidBody->getMotionState()->getWorldTransform(trans);
+	mat4 matrix;
+	trans.getOpenGLMatrix((btScalar *)&matrix);
+	return matrix;
 }

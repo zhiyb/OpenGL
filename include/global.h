@@ -1,7 +1,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-//#include <map>
 #include <unordered_map>
 #include <string>
 
@@ -14,17 +13,20 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <btBulletDynamicsCommon.h>
+
 #define SHADER_PATH	"shaders/"
 #define TEXTURE_PATH	"images/"
 #define MODEL_PATH	"models/"
 #define DATA_PATH	"data/"
 
 #define DATA_ENVIRON	DATA_PATH "environment.txt"
-#define DATA_WAVEFRONT	DATA_PATH "wavefront.txt"
+#define DATA_MODELS	DATA_PATH "models.txt"
 #define DATA_BULLET	DATA_PATH "bullet.txt"
-#define DATA_RECORD	DATA_PATH "record.txt"
+#define DATA_RECORDS	DATA_PATH "records.txt"
+#define DATA_OBJECTS	DATA_PATH "objects.txt"
 
-#define SUBMISSION
+//#define SUBMISSION
 #define BULLET
 //#define MODELS
 #define TEXTURE_ALPHA
@@ -60,7 +62,6 @@ enum {
 #define UNIFORM_LIGHT_INTENSITY	"lightIntensity"
 #define UNIFORM_ENVIRONMENT	"environment"
 #define UNIFORM_COLOUR		"colour"
-#define UNIFORM_TEXTURED	"textured"
 #define UNIFORM_SAMPLER		"sampler"
 #define UNIFORM_SAMPLER_SHADOW	"shadowSampler"
 

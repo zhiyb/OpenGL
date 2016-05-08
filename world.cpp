@@ -218,9 +218,9 @@ void environment_t::renderShadow()
 
 void loadRecords()
 {
-	ifstream datafs(DATA_RECORD);
+	ifstream datafs(DATA_RECORDS);
 	if (!datafs) {
-		cerr << "Cannot open record file " DATA_RECORD << endl;
+		cerr << "Cannot open record file " DATA_RECORDS << endl;
 		return;
 	}
 	string line, id;
