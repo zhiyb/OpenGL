@@ -12,6 +12,8 @@ public:
 
 private:
 	void setup();
+	float height(float x, float z);
+	void addVertex(float x, float z);
 	void addVertex(glm::vec3 vertex);
 };
 

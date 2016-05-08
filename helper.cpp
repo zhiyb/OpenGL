@@ -447,3 +447,17 @@ void setLights(uniformMap &uniforms)
 	while (i != MAX_LIGHTS)
 		glUniform1ui(uniforms[U_LIGHT_ENABLED(i++)], false);
 }
+
+void printObjects()
+{
+	for (const pair<string, object_t> &objpair: objects) {
+		const object_t &obj = objpair.second;
+		if (!obj.rigidBody)
+			continue;
+		btTransform trans;
+		obj.rigidBody->getMotionState()->getWorldTransform(trans);
+		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.model->scale;
+		quat rot = from_btQuaternion(trans.getRotation());
+		clog << obj.id << "\t@" << pos << ",\t" << rot << endl;
+	}
+}

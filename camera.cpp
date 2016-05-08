@@ -17,7 +17,7 @@
 #ifdef CAMERA_FOLLOW
 #define CAMERA_HEIGHT	(CAMERA_SIZE * 1.f)
 #else
-#define CAMERA_HEIGHT	(CAMERA_SIZE * 2.f)
+#define CAMERA_HEIGHT	(CAMERA_SIZE * 5.f)
 #endif
 
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.16f + CAMERA_HEIGHT, 1.f)
@@ -135,6 +135,11 @@ void Camera::cursorCB(double xpos, double ypos)
 
 void Camera::updateCB(float time)
 {
+	if (status.mode == status_t::TourMode) {
+		stop();
+		modelMatrix = bulletGetMatrix(rigidBody);
+		goto update;
+	}
 	if (status.run) {
 		pos = from_btVector3(bulletGetOrigin(rigidBody)) + vec3(0.f, CAMERA_HEIGHT, 0.f);
 		modelMatrix = bulletGetMatrix(rigidBody);
@@ -143,9 +148,11 @@ void Camera::updateCB(float time)
 		vec3 speed(forward() * this->speed);
 		rigidBody->setLinearVelocity(btVector3(speed.x, vy, speed.z));
 	} else
-		pos += forward() * speed * time;
+		setPosition(pos + forward() * speed * time);
+update:
+	lights[LIGHT_CAMERA].enabled = environment.status() == environment_t::Night;
+	lights[LIGHT_CAMERA].position = position() + (forward() + right() * 0.5f + upward() * -0.5f) * CAMERA_SIZE;
 	updateCalc();
-	lights[LIGHT_CAMERA].position = position() + forward() * CAMERA_SIZE;
 }
 
 void Camera::setup()
@@ -157,9 +164,9 @@ void Camera::setup()
 	bulletAddRigidBody(rigidBody, BULLET_CAMERA);
 	light_t &light = lights[LIGHT_CAMERA];
 	light.enabled = true;
-	light.attenuation = 0.8f;
-	light.colour = vec3(0.8f);
-	light.ambient = vec3(0.1f);
+	light.attenuation = 0.9f;
+	light.colour = vec3(1.f);
+	light.ambient = vec3(0.f);
 	light.shadow = 0;
 }
 
@@ -207,14 +214,27 @@ void Camera::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
-	glUniform3f(uniforms[UNIFORM_DIFFUSE], 1.f, 1.f, 1.f);
+	glUniform3f(uniforms[UNIFORM_AMBIENT], 0.2f, 0.4f, 1.f);
+	glUniform3f(uniforms[UNIFORM_DIFFUSE], 0.2f, 0.4f, 1.f);
 	glUniform3f(uniforms[UNIFORM_EMISSION], 0.f, 0.f, 0.f);
-	glUniform3f(uniforms[UNIFORM_SPECULAR], 1.f, 1.f, 1.f);
-	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
-	glUniform1f(uniforms[UNIFORM_SHININESS], 30.f);
+	glUniform3f(uniforms[UNIFORM_SPECULAR], 0.2f, 0.4f, 1.f);
+	glUniform1f(uniforms[UNIFORM_SHININESS], 10.f);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAMERA].id);
+	sphere->bind();
+	sphere->render();
+
+	if (!lights[LIGHT_CAMERA].enabled)
+		return;
+	glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
+	uniformMap &u = programs[PROGRAM_TEXTURE_BASIC].uniforms;
+
+	matrix.model = translate(mat4(), lights[LIGHT_CAMERA].position);
+	matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
+	matrix.update();
+	glUniformMatrix4fv(u[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniform3f(u[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
+
 	sphere->bind();
 	sphere->render();
 }
@@ -274,7 +294,7 @@ glm::mat4 Camera::view() const
 
 void Camera::print()
 {
-	clog << "Camera\t@" << pos << ", " << rot << endl;
+	clog << "Camera\t@" << pos << ",\t" << rot << endl;
 }
 
 void Camera::updateCalc()

@@ -36,6 +36,9 @@ void main(void)
 {
 	vec4 tex = vec4(material.diffuse, 1.0) * texture(sampler, fragment.tex);
 	float shadow = textureProj(shadowSampler, fragment.shadow);
+	vec3 shadowPos = fragment.shadow.xyz * fragment.shadow.w / 2048.f;
+	if (shadowPos.x < 0.0 || shadowPos.y < 0.0 || shadowPos.x > 1.0 || shadowPos.y > 1.0)
+		shadow = 1.f;
 	vec3 world = fragment.world;
 	vec3 normal = normalize(fragment.normal);
 	vec3 eyeDirection = normalize(fragment.eye);
@@ -74,4 +77,19 @@ void main(void)
 
 	vec3 colour = scattered * tex.rgb + reflected;
 	FragColor = vec4(min(colour, vec3(1.0)), tex.a);
+	//FragColor = vec4(normal, 1.0);
+	return;
+	if (shadowPos.x < 0.0 || shadowPos.x > 1.0)
+		shadowPos.x = 1.0;
+	else
+		shadowPos.x /= 2.0;
+	if (shadowPos.y < 0.0 || shadowPos.y > 1.0)
+		shadowPos.y = 1.0;
+	else
+		shadowPos.y /= 2.0;
+	if (shadowPos.z < 0.0 || shadowPos.z > 1.0)
+		shadowPos.z = 1.0;
+	else
+		shadowPos.z = shadow / 2.0;
+	FragColor = vec4(shadowPos, 1.0);
 }

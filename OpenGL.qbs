@@ -72,6 +72,7 @@ CppApplication {
         files: [
             "config.lua",
             "README.md",
+            "credits.txt",
         ]
     }
 

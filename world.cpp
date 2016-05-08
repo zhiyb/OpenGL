@@ -156,16 +156,6 @@ void environment_t::print()
 void environment_t::renderSkybox()
 {
 	glEnable(GL_CULL_FACE);
-	if (::status.shadow) {
-		// Render ground
-		uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
-		vec3 pos(floor(camera.position()));
-		shadowMatrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
-		shadowMatrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
-		mesh.ground->bind();
-		mesh.ground->render();
-	}
 	glDepthMask(GL_FALSE);
 
 	// Render skybox
@@ -208,6 +198,18 @@ void environment_t::renderSkybox()
 
 void environment_t::renderGround()
 {
+	glEnable(GL_CULL_FACE);
+	if (::status.shadow) {
+		return;
+		uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
+		shadowMatrix.model = mat4();
+		shadowMatrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+		mesh.ground->bind();
+		mesh.ground->render();
+		return;
+	}
+
 	glUseProgram(programs[PROGRAM_TEXTURE_LIGHTING_SHADOW].id);
 	uniformMap &uniforms = programs[PROGRAM_TEXTURE_LIGHTING_SHADOW].uniforms;
 
@@ -221,15 +223,15 @@ void environment_t::renderGround()
 
 	setLights(uniforms);
 
-	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&ambient);
 	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
 	glUniform3f(uniforms[UNIFORM_DIFFUSE], 0.8f, 0.8f, 0.8f);
 	glUniform3f(uniforms[UNIFORM_EMISSION], 0.f, 0.f, 0.f);
 	glUniform3f(uniforms[UNIFORM_SPECULAR], 0.f, 0.f, 0.f);
 	glUniform1f(uniforms[UNIFORM_SHININESS], 0.f);
 
-	vec3 pos(floor(camera.position()));
-	matrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
+	//vec3 pos(floor(camera.position()));
+	//matrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
+	matrix.model = mat4();
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);

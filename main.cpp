@@ -10,6 +10,7 @@
 #include "global.h"
 #include "camera.h"
 #include "bullet.h"
+#include "tour.h"
 
 #include "sphere.h"
 #include "square.h"
@@ -102,13 +103,16 @@ static void renderEnvironmentShadow()
 {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	shadowMatrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 1.f, 20.f);
-	shadowMatrix.view = lookAt(environment.light.position,
-				   vec3(0.f), vec3(0.f, 1.f, 0.f));
+	//shadowMatrix.projection = infinitePerspective(90.f, (GLfloat)width / (GLfloat)height, 1.f);
+	//shadowMatrix.projection = ortho(-1.f, 1.f, -1.f, 1.f);
+	shadowMatrix.projection = perspective<GLfloat>(90.f, (GLfloat)width / (GLfloat)height, 1.f, 30.f);
+	shadowMatrix.view = lookAt(environment.light.position, vec3(0.f), vec3(0.f, 1.f, 0.f));
+	//shadowMatrix.view = lookAt(environment.light.position + camera.position(),
+	//			   camera.position(), vec3(0.f, 1.f, 0.f));
 
 	glUseProgram(programs[PROGRAM_SHADOW].id);
 	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
-	//environment.renderShadow();
+	environment.renderGround();
 	camera.render();
 
 	for (const pair<string, object_t> &objpair: objects) {
@@ -144,7 +148,7 @@ static void render()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	// Resolve depth-fighting issues
 	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(2.f, 4.f);
+	glPolygonOffset(10.f, 4.f);
 	status.shadow = true;
 	renderEnvironmentShadow();
 	glDisable(GL_POLYGON_OFFSET_FILL);
@@ -157,12 +161,12 @@ static void render()
 #ifndef SUBMISSION
 	// Render shadow texture to screen
 	if (status.mode == status_t::EnvShadowMode) {
-		glClearColor(1.f, 1.f, 1.f, 1.f);
+		glClearColor(0.f, 0.f, 0.f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
 		uniformMap &uniforms = programs[PROGRAM_TEXTURE_BASIC].uniforms;
-		mat4 mat = rotate(mat4(), -PI / 2.f, vec3(1.f, 0.f, 0.f));
+		mat4 mat = rotate(mat4(), PI / 2, vec3(1.f, 0.f, 0.f));
 		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&mat);
 		glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
 
@@ -187,6 +191,10 @@ void step(bool first = false)
 	double time = glfwGetTime();
 	double diff = time - status.animation;
 	status.animation = time;
+
+	if (status.mode == status_t::TourMode)
+		updateTour();
+
 	camera.updateCB(diff);
 
 	if (first || (status.run && diff > 0.f)) {
@@ -198,25 +206,12 @@ void step(bool first = false)
 	}
 }
 
-void tour(const bool e)
-{
-}
-
 void report()
 {
 	clog << "****** Report at " << glfwGetTime() << " seconds ******" << endl;
 	environment.print();
 	camera.print();
-	for (const pair<string, object_t> &objpair: objects) {
-		const object_t &obj = objpair.second;
-		if (!obj.rigidBody)
-			continue;
-		btTransform trans;
-		obj.rigidBody->getMotionState()->getWorldTransform(trans);
-		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.model->scale;
-		quat rot = from_btQuaternion(trans.getRotation());
-		clog << obj.id << "\t@" << pos << ", " << rot << endl;
-	}
+	printObjects();
 }
 
 static void refreshCB(GLFWwindow *window)
@@ -226,7 +221,7 @@ static void refreshCB(GLFWwindow *window)
 	glViewport(0, 0, width, height);
 	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 30.f);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 100.f);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -240,6 +235,9 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		// Exit the program
 		quit();
 		return;
+	case GLFW_KEY_H:
+		// Help screen, optional
+		return;
 #ifndef SUBMISSION
 	case GLFW_KEY_X:
 		report();
@@ -249,14 +247,14 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 
 	if (status.mode == status_t::TourMode) {
 		if (key == GLFW_KEY_E)	// Exit the tour mode (optional)
-			tour(false);
+			quitTour();
 		return;
 	}
 
 	switch (key) {
 	case GLFW_KEY_T:
 		// Start the tour (keys except E, Q, ESC are ignored)
-		tour(false);
+		initTour();
 		return;
 	case GLFW_KEY_SPACE:
 		// Stop all motion (optional)
@@ -305,16 +303,22 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 
 void mouseCB(GLFWwindow */*window*/, int button, int action, int /*mods*/)
 {
+	if (status.mode == status_t::TourMode)
+		return;
 	camera.mouseCB(button, action);
 }
 
 void scrollCB(GLFWwindow */*window*/, double /*xoffset*/, double yoffset)
 {
+	if (status.mode == status_t::TourMode)
+		return;
 	camera.scrollCB(yoffset);
 }
 
 void cursorCB(GLFWwindow */*window*/, double xpos, double ypos)
 {
+	if (status.mode == status_t::TourMode)
+		return;
 	camera.cursorCB(xpos, ypos);
 }
 
@@ -366,11 +370,13 @@ int main(int /*argc*/, char */*argv*/[])
 	clog << (glfwExtensionSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
 	clog << (glewIsSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
 
+#if 0
 	GLint n, i;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
 	clog << "Extensions: " << n << endl;
 	for (i = 0; i < n; i++)
 		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
+#endif
 #endif
 
 	glGetError();	// There is an initialisation error
@@ -390,6 +396,7 @@ int main(int /*argc*/, char */*argv*/[])
 	glGetError();	// Ignore the error
 	//checkError("enabling texture 2D");
 	//glEnable(GL_TEXTURE_CUBE_MAP);
+	//checkError("enabling cube map");
 
 	if (setupPrograms() || setupTextures()) {
 		glfwTerminate();
@@ -400,6 +407,7 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 #endif
 
+	loadTour();
 	loadRecords();
 	loadModels();
 	setupObjects();
@@ -416,11 +424,11 @@ int main(int /*argc*/, char */*argv*/[])
 
 	float past = status.animation = glfwGetTime();
 	unsigned int count = 0;
-	bool first = true;
+	step(true);
+	initTour();
 	while (!glfwWindowShouldClose(window)) {
-		step(first);
-		first = false;
 		render();
+		step();
 
 		// FPS counter
 		count++;

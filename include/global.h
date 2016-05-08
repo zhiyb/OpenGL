@@ -25,8 +25,10 @@
 #define DATA_BULLET	DATA_PATH "bullet.txt"
 #define DATA_RECORDS	DATA_PATH "records.txt"
 #define DATA_OBJECTS	DATA_PATH "objects.txt"
+#define DATA_TOUR	DATA_PATH "tour.txt"
 
 #define MAX_LIGHTS	5
+#define LIGHT_SIZE	0.0008f
 #define LIGHT_ENV	"ENV"
 #define LIGHT_CAMERA	"CAM"
 

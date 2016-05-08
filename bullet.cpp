@@ -70,8 +70,8 @@ void bulletCleanup()
 
 void bulletUpdate(double diff)
 {
-	double step = 1.f / 180.f;
-	dynamicsWorld->stepSimulation(diff == 0.f ? step : diff, 60, step);
+	double step = 1.f / 240.f;
+	dynamicsWorld->stepSimulation(diff == 0.f ? step : diff, 1.f / step, step);
 }
 
 void bulletAddRigidBody(btRigidBody *rigidBody)

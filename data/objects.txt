@@ -3,9 +3,10 @@
 # Name	Type	Parameters
 # Type:Model	ID	Position
 
-Arena	Model	Dunwell	0 0.12 0
+Arena	Model	Dunwell	0 0.1 0
 
-Miku	Model	Miku	0.3 0.13 0
+#Miku	Model	Miku	0.3 0.13 0
+
 nMiku0	Model	nMiku	0 0.13 0
 nRin0	Model	nRin	-0.2 0.13 0
 nLen0	Model	nLen	-0.4 0.13 0
