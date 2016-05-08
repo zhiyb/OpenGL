@@ -10,10 +10,17 @@ struct shader_t {
 };
 
 std::string basename(std::string &path);
-std::istream &operator>>(std::istream &stream, glm::vec3 &vec);
-std::istream &operator>>(std::istream &stream, glm::vec4 &vec);
-std::ostream &operator<<(std::ostream &stream, const glm::vec3 &vec);
-std::ostream &operator<<(std::ostream &stream, const glm::quat &q);
+static inline std::istream &operator>>(std::istream &stream, glm::vec3 &vec)
+{return stream >> vec.x >> vec.y >> vec.z;}
+static inline std::istream &operator>>(std::istream &stream, glm::vec4 &vec)
+{return stream >> vec.x >> vec.y >> vec.z >> vec.w;}
+static inline std::istream &operator>>(std::istream &stream, glm::quat &q)
+{return stream >> q.x >> q.y >> q.z >> q.w;}
+
+static inline std::ostream &operator<<(std::ostream &stream, const glm::vec3 &vec)
+{return stream << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';}
+static inline std::ostream &operator<<(std::ostream &stream, const glm::quat &q)
+{return stream << '(' << q.x << ", " << q.y << ", " << q.z << ", " << q.w << ')';}
 
 // delete[] after use!
 char *readFile(const char *path);

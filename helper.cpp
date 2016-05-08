@@ -37,26 +37,6 @@ string basename(string &path)
 	return path;
 }
 
-istream &operator>>(istream &stream, vec3 &vec)
-{
-	return stream >> vec.x >> vec.y >> vec.z;
-}
-
-istream &operator>>(istream &stream, vec4 &vec)
-{
-	return stream >> vec.x >> vec.y >> vec.z >> vec.w;
-}
-
-ostream &operator<<(ostream &stream, const vec3 &vec)
-{
-	return stream << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
-}
-
-ostream &operator<<(ostream &stream, const quat &q)
-{
-	return stream << '(' << q.x << ", " << q.y << ", " << q.z << ", " << q.w << ')';
-}
-
 char *readFile(const char *path)
 {
 	ifstream is;
@@ -200,19 +180,24 @@ static void setupUniforms(GLuint index)
 GLuint setupPrograms()
 {
 	static const shader_t shaders[PROGRAM_COUNT][3] = {
-		[PROGRAM_TEXTURE] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "texture.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
+		[PROGRAM_TEXTURE_LIGHTING] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "texture_lighting.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting.frag"},
 			{0, NULL}
 		},
 		[PROGRAM_WAVEFRONT] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture.frag"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting_shadow.frag"},
 			{0, NULL}
 		},
-		[PROGRAM_SKYBOX] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "skybox.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "skybox.frag"},
+		[PROGRAM_SHADOW] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "basic.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "shadow.frag"},
+			{0, NULL}
+		},
+		[PROGRAM_TEXTURE_BASIC] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "texture_basic.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_basic.frag"},
 			{0, NULL}
 		},
 	};
@@ -224,7 +209,7 @@ GLuint setupPrograms()
 		programs[idx].id = program;
 		glBindAttribLocation(program, ATTRIB_POSITION, "position");
 		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
-		glBindAttribLocation(program, ATTRIB_TEXCOORD, "texCoord");
+		glBindAttribLocation(program, ATTRIB_TEXCOORD, "tex");
 		checkError("binding attribuates");
 		if (setupProgramFromFiles(program, shaders[idx]) != 0)
 			return 2;
@@ -268,12 +253,12 @@ GLuint setupTextures()
 #else
 			tex.n = 3;
 #endif
-			glGenTextures(1, &tex.texture);
-			if (tex.texture == 0) {
+			glGenTextures(1, &tex.id);
+			if (tex.id == 0) {
 				cerr << "Cannot generate texture storage for white texture" << endl;
 				continue;
 			}
-			glBindTexture(GL_TEXTURE_2D, tex.texture);
+			glBindTexture(GL_TEXTURE_2D, tex.id);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -285,8 +270,8 @@ GLuint setupTextures()
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex.x, tex.y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 #endif
 			if (checkError("uploading white texture")) {
-				glDeleteTextures(1, &tex.texture);
-				tex.texture = 0;
+				glDeleteTextures(1, &tex.id);
+				tex.id = 0;
 			}
 		}
 
@@ -301,7 +286,7 @@ texture_t loadTexture(const char *path)
 	const int channels = 3;
 #endif
 	texture_t tex;
-	tex.texture = 0;
+	tex.id = 0;
 	unsigned char *data = stbi_load(path, &tex.x, &tex.y, &tex.n, channels);
 	if (data == 0) {
 		cerr << "Error loading texture file " << path << endl;
@@ -315,13 +300,13 @@ texture_t loadTexture(const char *path)
 #ifdef WAVEFRONT_DEBUG
 	clog << __func__ << ": Texture file " << path << " loaded, " << tex.x << "x" << tex.y << "-" << tex.n << endl;
 #endif
-	glGenTextures(1, &tex.texture);
-	if (tex.texture == 0) {
+	glGenTextures(1, &tex.id);
+	if (tex.id == 0) {
 		cerr << "Cannot generate texture storage for " << path << endl;
 		stbi_image_free(data);
 		return tex;
 	}
-	glBindTexture(GL_TEXTURE_2D, tex.texture);
+	glBindTexture(GL_TEXTURE_2D, tex.id);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -333,8 +318,8 @@ texture_t loadTexture(const char *path)
 #endif
 	stbi_image_free(data);
 	if (checkError((string("uploading texture from ") + path).c_str())) {
-		glDeleteTextures(1, &tex.texture);
-		tex.texture = 0;
+		glDeleteTextures(1, &tex.id);
+		tex.id = 0;
 	}
 	return tex;
 }

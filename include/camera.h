@@ -26,7 +26,7 @@ public:
 	void accelerate(float v);
 	void elevate(float angle);
 
-	void setPosition(const glm::vec3 pos) {this->pos = pos;}
+	void setPosition(const glm::vec3 pos);
 	void setRotation(const glm::quat rot) {this->rot = rot;}
 	glm::vec3 &position() {return pos;}
 	glm::vec3 position() const {return pos;}

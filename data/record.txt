@@ -1,0 +1,20 @@
+# Predefined locations (records)
+
+# Record	ID
+# Time		Seconds
+# Camera	Position, rotation
+
+# Predefined location (screen shot)
+Record	P
+Time	7.79324
+Camera	-0.496121 0.283264 0.416825	-0.0172021 -0.232785 -0.0204017 0.972162
+
+# Alternative view point 1 (optional)
+Record	L
+Time	0
+Camera	0 0 0	0 0 0 1
+
+# Alternative view point 2 (overhead, optional)
+Record	O
+Time	8.62443
+Camera	-9.16409 9.37043 4.95433	-0.335589 -0.46158 -0.204964 0.795182

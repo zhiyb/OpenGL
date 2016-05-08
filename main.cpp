@@ -5,14 +5,14 @@
 #include <map>
 #include <cstdlib>
 
-#include "world.h"
-
-#include "global.h"
 #include "helper.h"
+#include "world.h"
+#include "global.h"
 #include "camera.h"
 #include "bullet.h"
 
 #include "sphere.h"
+#include "square.h"
 #include "cube.h"
 #include "skybox.h"
 #include "wavefront.h"
@@ -29,6 +29,15 @@ GLFWwindow *window;
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
+struct shadow_t {
+	struct env_t {
+		GLuint texture;
+	} environment;
+	GLuint fbo;
+} shadow;
+
+Square *square;
+
 struct object_t {
 	string name;
 	bool culling;
@@ -42,8 +51,31 @@ vector<object_t> objects;
 
 void quit();
 
+static void setupShadowStorage()
+{
+	glGenTextures(1, &shadow.environment.texture);
+	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+		     SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	glGenFramebuffers(1, &shadow.fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
+	glDrawBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void setupObjects()
 {
+	square = new Square;
+
 	ifstream datafs(DATA_WAVEFRONT);
 	if (!datafs) {
 		cerr << "Cannot open model description file " DATA_WAVEFRONT << endl;
@@ -56,12 +88,10 @@ void setupObjects()
 		istringstream ss(line);
 		string modelPath, mtlPath, texPath;
 		object_t obj;
-		ss >> obj.name;
-		ss >> modelPath >> mtlPath >> texPath;
+		ss >> obj.name >> modelPath >> mtlPath >> texPath;
 		if (!ss)
 			continue;
-		ss >> obj.culling;
-		ss >> obj.scale >> obj.offset;
+		ss >> obj.culling >> obj.scale >> obj.offset;
 		ss >> obj.bullet >> obj.mass;
 		clog << __func__ << ": Model " << modelPath << " loading..." << endl;
 		Wavefront *model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
@@ -79,7 +109,7 @@ void setupObjects()
 			continue;
 		}
 
-		if (!obj.mass) {
+		if (!obj.mass) {	// Stationary object
 			vector<btRigidBody *> rigidBodies;
 			model->createStaticRigidBody(&rigidBodies, to_btVector3(obj.scale));
 			for (btRigidBody *rigidBody: rigidBodies) {
@@ -87,7 +117,7 @@ void setupObjects()
 				rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
 				bulletAddRigidBody(rigidBody, BULLET_GROUND);
 			}
-		} else {
+		} else {		// Use bounding box
 			obj.rigidBody = model->createRigidBody(to_btVector3(obj.scale), obj.mass);
 			btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
 			obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.offset));
@@ -98,18 +128,21 @@ void setupObjects()
 	}
 }
 
-static void render()
+static void renderObjects()
 {
-	glClearColor(0.f, 0.f, 0.f, 1.f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	environment.render();
-	camera.render();
-
 	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
 	//checkError("switching to PROGRAM_WAVEFRONT");
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
 
-	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&environment.light.direction);
+	glUniform1i(uniforms[UNIFORM_SAMPLER], 0);
+	glUniform1i(uniforms[UNIFORM_SAMPLER_SHADOW], 1);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_SHADOW], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
+	glActiveTexture(GL_TEXTURE0);
+
+	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 
@@ -119,9 +152,9 @@ static void render()
 			matrix.model = bulletGetMatrix(obj.rigidBody) * matrix.model;
 		matrix.model = scale(matrix.model, obj.scale);
 		matrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-		glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-		glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+		glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 		if (obj.culling)
 			glEnable(GL_CULL_FACE);
@@ -130,6 +163,83 @@ static void render()
 		obj.model->bind();
 		obj.model->render();
 	}
+}
+
+static void renderEnvironmentShadow()
+{
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	shadowMatrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 1.f, 20.f);
+	shadowMatrix.view = lookAt(environment.light.position,
+				   vec3(0.f), vec3(0.f, 1.f, 0.f));
+
+	glUseProgram(programs[PROGRAM_SHADOW].id);
+	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
+	//environment.renderShadow();
+
+	for (object_t &obj: objects) {
+		shadowMatrix.model = translate(mat4(), obj.offset);
+		if (obj.rigidBody)
+			shadowMatrix.model = bulletGetMatrix(obj.rigidBody) * shadowMatrix.model;
+		shadowMatrix.model = scale(shadowMatrix.model, obj.scale);
+		shadowMatrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+
+		if (obj.culling)
+			glEnable(GL_CULL_FACE);
+		else
+			glDisable(GL_CULL_FACE);
+		obj.model->bind();
+		obj.model->render();
+	}
+
+	static const mat4 scaleBiasMatrix = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
+						 vec4(0.0f, 0.5f, 0.0f, 0.0f),
+						 vec4(0.0f, 0.0f, 0.5f, 0.0f),
+						 vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	shadowMatrix.mvp = scaleBiasMatrix * shadowMatrix.projection * shadowMatrix.view;
+}
+
+static void render()
+{
+	// Render shadow map to texture
+	glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow.environment.texture, 0);
+	glViewport(0, 0, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	// Resolve depth-fighting issues
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2.f, 4.f);
+	renderEnvironmentShadow();
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	glViewport(0, 0, width, height);
+
+	// Render shadow texture to screen
+	if (status.mode == status_t::EnvShadowMode) {
+		glClearColor(1.f, 1.f, 1.f, 1.f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
+		uniformMap &uniforms = programs[PROGRAM_TEXTURE_BASIC].uniforms;
+		mat4 mat = rotate(mat4(), -PI / 2.f, vec3(1.f, 0.f, 0.f));
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&mat);
+		glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
+
+		glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
+		square->bind();
+		square->render();
+		return;
+	}
+
+	// Render scene
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	environment.render();
+	camera.render();
+	renderObjects();
 }
 
 void step(bool first = false)
@@ -175,7 +285,7 @@ static void refreshCB(GLFWwindow *window)
 	glViewport(0, 0, width, height);
 	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 1000.f);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.02f, 30.f);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -183,17 +293,17 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 
-	if (key == GLFW_KEY_X) {
-		report();
-		return;
-	}
-
 	switch (key) {
 	case GLFW_KEY_ESCAPE:
 	case GLFW_KEY_Q:
 		// Exit the program
 		quit();
 		return;
+#ifndef SUBMISSION
+	case GLFW_KEY_X:
+		report();
+		return;
+#endif
 	}
 
 	if (status.mode == status_t::TourMode) {
@@ -217,6 +327,35 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		status.run = true;
 		camera.reset();
 		return;
+
+	case GLFW_KEY_P:
+		// Move to predefined location (screen shot)
+		camera.backup();
+		loadRecord(records["P"]);
+		return;
+	case GLFW_KEY_L:
+		// Alternative view point 1 (optional)
+		camera.backup();
+		loadRecord(records["L"]);
+		return;
+	case GLFW_KEY_O:
+		// Alternative view point 2 (overhead, optional)
+		camera.backup();
+		loadRecord(records["O"]);
+		return;
+	case GLFW_KEY_M:
+		// Return to last position of mobile camera
+		camera.restore();
+		return;
+
+#ifndef SUBMISSION
+	case GLFW_KEY_0:
+		if (status.mode == status_t::EnvShadowMode)
+			status.mode = status_t::CameraMode;
+		else
+			status.mode = status_t::EnvShadowMode;
+		return;
+#endif
 	}
 
 	camera.keyCB(key);
@@ -333,11 +472,11 @@ int main(int /*argc*/, char */*argv*/[])
 	bulletInit();
 #endif
 
+	loadRecords();
 	camera.setup();
 	environment.setup();
 	setupObjects();
-	status.run = true;
-	status.mode = status_t::CameraMode;
+	setupShadowStorage();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
@@ -357,13 +496,23 @@ int main(int /*argc*/, char */*argv*/[])
 		// FPS counter
 		count++;
 		float now = glfwGetTime();
-		if (now - past > 3) {
+		if (now - past > 1.f) {
 			float fps = (float)count / (now - past);
-			char buf[32];
-			sprintf(buf, "%g FPS [%s]", fps, status.mode == status_t::CameraMode ? "Camera" : "Tour");
-			glfwSetWindowTitle(window, buf);
 			count = 0;
 			past = now;
+
+			ostringstream ss;
+			ss << fps << " FPS [";
+			if (status.mode == status_t::CameraMode)
+				ss << "Camera";
+			else if (status.mode == status_t::TourMode)
+				ss << "Tour";
+			else if (status.mode == status_t::EnvShadowMode)
+				ss << "Shadow: Environment";
+			ss << "]";
+			if (!status.run)
+				ss << " *Paused*";
+			glfwSetWindowTitle(window, ss.str().c_str());
 		}
 
 		glfwSwapBuffers(window);

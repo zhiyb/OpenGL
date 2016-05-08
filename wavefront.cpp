@@ -27,7 +27,7 @@ void Wavefront::useMaterial(const int i)
 	const material_t &material = materials.at(i);
 
 	if (material.diffuse_texname.empty())
-		glBindTexture(GL_TEXTURE_2D, ::textures[TEXTURE_WHITE].texture);
+		glBindTexture(GL_TEXTURE_2D, ::textures[TEXTURE_WHITE].id);
 	else
 		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
 
@@ -49,9 +49,14 @@ void Wavefront::render()
 
 	unsigned int shapeID = 0;
 	for (const shape_t &shape: shapes) {
-		glBindVertexArray(vaos[shapeID]);
+		glBindVertexArray(vaos[shapeID++]);
 		//checkError("Wavefront: binding vertex array");
 		const mesh_t &mesh = shape.mesh;
+		if (status.shadow) {
+			glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+			continue;
+		}
+
 		if (mesh.indices.size() < 3)
 			continue;
 
@@ -70,15 +75,14 @@ void Wavefront::render()
 		useMaterial(mtl);
 		glDrawElements(GL_TRIANGLES, mesh.indices.size() - start, GL_UNSIGNED_INT, (void *)(start * sizeof(GLuint)));
 		//checkError("Wavefront: draw elements");
-		shapeID++;
 	}
 }
 
 btRigidBody *Wavefront::createRigidBody(const btVector3 &scale, const float mass)
 {
 	btTransform t = btTransform(btQuaternion(0, 0, 0, 1),
-				    scale * to_btVector3(boundingBox.origin()));
-	btCollisionShape* fallshape = new btBoxShape(to_btVector3(boundingBox.size() / 2.f) * scale);
+				    scale * to_btVector3(boundingBox.origin));
+	btCollisionShape* fallshape = new btBoxShape(to_btVector3(boundingBox.size / 2.f) * scale);
 	btDefaultMotionState* fallMotionState = new btDefaultMotionState(t);
 	btVector3 fallInertia(0,0,0);
 	fallshape->calculateLocalInertia(mass,fallInertia);
@@ -122,7 +126,7 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 			string &texname = material.diffuse_texname;
 			texname = basename(texname);
 			if (textures.find(texname) == textures.end())
-				textures[texname] = loadTexture((texDir + texname).c_str()).texture;
+				textures[texname] = loadTexture((texDir + texname).c_str()).id;
 		}
 	}
 
@@ -184,6 +188,7 @@ void Wavefront::setup(const char *file, const char *mtlDir, const char *texDir)
 
 void Wavefront::calcBoundingBox()
 {
+	vec3 min, max;
 	bool first = true;
 	for (const shape_t &shape: shapes) {
 		const std::vector<float> &positions = shape.mesh.positions;
@@ -191,13 +196,15 @@ void Wavefront::calcBoundingBox()
 			vec3 pos(positions[i], positions[i + 1], positions[i + 2]);
 			if (first) {
 				first = false;
-				boundingBox.max = boundingBox.min = pos;
+				max = min = pos;
 			} else {
-				boundingBox.max = max(boundingBox.max, pos);
-				boundingBox.min = min(boundingBox.min, pos);
+				max = glm::max(max, pos);
+				min = glm::min(min, pos);
 			}
 		}
 	}
+	boundingBox.size = max - min;
+	boundingBox.origin = (max + min) / 2.f;
 	//boundingBox.debugPrint();
 }
 
@@ -271,5 +278,5 @@ void Wavefront::debugPrint() const
 
 void Wavefront::BoundingBox::debugPrint() const
 {
-	clog << __PRETTY_FUNCTION__ << ": max = " << max << ", min = " << min << endl;
+	clog << __PRETTY_FUNCTION__ << ": origin = " << origin << ", size = " << size << endl;
 }

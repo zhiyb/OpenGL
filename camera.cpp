@@ -20,7 +20,7 @@
 #define CAMERA_HEIGHT	(CAMERA_SIZE * 10.f)
 #endif
 
-#define CAMERA_INIT_POS	glm::vec3(0.f, 0.2f + CAMERA_HEIGHT, 1.f)
+#define CAMERA_INIT_POS	glm::vec3(0.f, 0.16f + CAMERA_HEIGHT, 1.f)
 
 using namespace std;
 using namespace glm;
@@ -67,33 +67,7 @@ void Camera::keyCB(int key)
 		elevate(-CAMERA_ELEV);
 		break;
 
-	case GLFW_KEY_P:
-		// Move to predefined location (screen shot)
-		backup();
-		setPosition(CAMERA_V0_POS);
-		setRotation(CAMERA_V0_ROT);
-		status.pause(true);
-		return;
-	case GLFW_KEY_L:
-		// Alternative view point 1 (optional)
-		backup();
-		setPosition(CAMERA_V1_POS);
-		setRotation(CAMERA_V1_ROT);
-		status.pause(true);
-		return;
-	case GLFW_KEY_O:
-		// Alternative view point 2 (overhead, optional)
-		backup();
-		setPosition(CAMERA_V2_POS);
-		setRotation(CAMERA_V2_ROT);
-		status.pause(true);
-		return;
-	case GLFW_KEY_M:
-		// Return to last position of mobile camera
-		restore();
-		return;
-
-#if 1
+#ifndef SUBMISSION
 	case GLFW_KEY_W:
 		pos += forward() * movement;
 		break;
@@ -187,31 +161,34 @@ void Camera::reset()
 	rigidBody->getWorldTransform().setIdentity();
 	rigidBody->getWorldTransform().setOrigin(to_btVector3(CAMERA_INIT_POS));
 	stop();
+	pos = vec3(0.f);
+	rot = quat();
 }
 
 void Camera::stop()
 {
 	rigidBody->activate(true);
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
+	rigidBody->setAngularVelocity(btVector3(0.f, 0.f, 0.f));
 	speed = 0.f;
 }
 
 void Camera::render()
 {
 	glEnable(GL_CULL_FACE);
-	glUseProgram(programs[PROGRAM_TEXTURE].id);
-	uniformMap &uniforms = programs[PROGRAM_TEXTURE].uniforms;
+	glUseProgram(programs[PROGRAM_TEXTURE_LIGHTING].id);
+	uniformMap &uniforms = programs[PROGRAM_TEXTURE_LIGHTING].uniforms;
 
-	glUniform3fv(uniforms[UNIFORM_LIGHT_DIRECTION], 1, (GLfloat *)&environment.light.direction);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&position());
 
 	matrix.model = modelMatrix;
 	matrix.model = scale(matrix.model, vec3(CAMERA_SIZE));
 	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniformMatrix4fv(uniforms[UNIFORM_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-	glUniformMatrix3fv(uniforms[UNIFORM_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
@@ -221,7 +198,7 @@ void Camera::render()
 	glUniform1f(uniforms[UNIFORM_AMBIENT], 0.3f);
 	glUniform1f(uniforms[UNIFORM_SHININESS], 30.f);
 
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAMERA].texture);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAMERA].id);
 	sphere->bind();
 	sphere->render();
 }
@@ -236,6 +213,8 @@ void Camera::restore()
 {
 	pos = bak.pos;
 	rot = bak.rot;
+	rigidBody->getWorldTransform().setIdentity();
+	rigidBody->getWorldTransform().setOrigin(to_btVector3(pos));
 	stop();
 }
 
@@ -261,14 +240,11 @@ void Camera::elevate(float angle)
 	rot = glm::rotate(rot, angle, vec3(1.f, 0.f, 0.f));
 }
 
-void Camera::print()
+void Camera::setPosition(const vec3 pos)
 {
-	clog << "Camera\t@" << pos << ", " << rot << endl;
-}
-
-void Camera::updateCalc()
-{
-	matrix.view = view();
+	this->pos = pos;
+	rigidBody->getWorldTransform().setIdentity();
+	rigidBody->getWorldTransform().setOrigin(to_btVector3(pos));
 }
 
 glm::mat4 Camera::view() const
@@ -278,4 +254,14 @@ glm::mat4 Camera::view() const
 #else
 	return lookAt(pos, pos + forward(), upward());
 #endif
+}
+
+void Camera::print()
+{
+	clog << "Camera\t@" << pos << ", " << rot << endl;
+}
+
+void Camera::updateCalc()
+{
+	matrix.view = view();
 }

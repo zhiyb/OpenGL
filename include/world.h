@@ -1,19 +1,22 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <unordered_map>
+#include <string>
 #include "global.h"
 
-extern class status_t
+class status_t
 {
 public:
+	status_t() : run(true), shadow(false), animation(0.f), mode(CameraMode) {}
 	void pause(bool e);
 
-	bool run;
+	bool run, shadow;
 	double animation, pauseStart, pauseDuration;
-	enum {CameraMode, TourMode} mode;
-} status;
+	enum {CameraMode, EnvShadowMode, TourMode} mode;
+};
 
-extern class matrix_t
+class matrix_t
 {
 public:
 	void update();
@@ -21,9 +24,20 @@ public:
 	glm::mat4 model, view, projection;
 	glm::mat4 mvp;
 	glm::mat3 normal;
-} matrix;
+};
 
-extern class environment_t
+struct record_t {
+	float time;
+	struct {
+		glm::vec3 pos;
+		glm::quat rot;
+	} camera;
+};
+
+void loadRecords();
+void loadRecord(record_t &record);
+
+class environment_t
 {
 public:
 	environment_t();
@@ -36,11 +50,12 @@ public:
 	void setup();
 	void print();
 	void render();
-	enum DaylightStatus status() {return day.status;}
+	void renderShadow();
+	enum DaylightStatus status() const {return day.status;}
 
 	glm::vec3 ambient;
 	struct {
-		glm::vec3 direction, intensity;
+		glm::vec3 position, intensity;
 	} light;
 
 private:
@@ -77,6 +92,11 @@ private:
 
 	double time;
 	class btRigidBody *groundRigidBody;
-} environment;
+};
+
+extern status_t status;
+extern matrix_t matrix, shadowMatrix;
+extern environment_t environment;
+extern std::unordered_map<std::string, record_t> records;
 
 #endif // WORLD_H

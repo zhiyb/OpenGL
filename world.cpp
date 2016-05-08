@@ -14,8 +14,9 @@ using namespace std;
 using namespace glm;
 
 status_t status;
-matrix_t matrix;
+matrix_t matrix, shadowMatrix;
 environment_t environment;
+unordered_map<string, record_t> records;
 
 void status_t::pause(bool e)
 {
@@ -40,7 +41,7 @@ void matrix_t::update()
 environment_t::environment_t()
 {
 	ambient = vec3(1.f, 0.95f, 0.95f) / 2.f;
-	light.direction = vec3(0.f, 1.f, 0.f);
+	light.position = vec3(0.f, 1.f, 0.f);
 	light.intensity = vec3(1.f, 0.95f, 0.95f);
 	mesh.skybox = 0;
 	mesh.sun = 0;
@@ -126,7 +127,7 @@ void environment_t::update(float time)
 	}
 
 direction:
-	light.direction = normalize(vec3(rotate(quat(), angle, sun.axis) * vec4(sun.initial, 0.f)));
+	light.position = vec3(rotate(quat(), angle, sun.axis) * vec4(sun.initial, 0.f));
 }
 
 void environment_t::setup()
@@ -145,22 +146,21 @@ void environment_t::print()
 
 void environment_t::render()
 {
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
 
 	// Render skybox
-	glUseProgram(programs[PROGRAM_SKYBOX].id);
-	//checkError("switching to PROGRAM_SKYBOX");
-	uniformMap &uniforms = programs[PROGRAM_SKYBOX].uniforms;
+	glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
+	uniformMap &uniforms = programs[PROGRAM_TEXTURE_BASIC].uniforms;
 
-	vec3 brightness = ambient + light.intensity;
+	vec3 brightness = ambient + (status() == Night ? vec3(0.f) : light.intensity);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&brightness);
 
 	matrix.model = translate(mat4(), camera.position());
 	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].texture);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].id);
 	//checkError("binding TEXTURE_SKYBOX");
 	mesh.skybox->bind();
 	mesh.skybox->render();
@@ -171,16 +171,16 @@ void environment_t::render()
 	else
 		glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&sun.moon);
 
-	matrix.model = translate(mat4(), environment.light.direction);
+	matrix.model = translate(mat4(), environment.light.position);
 	matrix.model = translate(matrix.model, camera.position());
-	vec3 normal = cross(vec3(0.f, -1.f, 0.f), light.direction);
-	float angle = acos(dot(vec3(0.f, -1.f, 0.f), light.direction));
+	vec3 normal = cross(vec3(0.f, -1.f, 0.f), light.position);
+	float angle = acos(dot(vec3(0.f, -1.f, 0.f), normalize(light.position)));
 	matrix.model = rotate(matrix.model, angle, normal);
 	matrix.model = scale(matrix.model, vec3(environment.sun.size));
 	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GLOW].texture);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GLOW].id);
 	//checkError("binding TEXTURE_GLOW");
 	mesh.sun->bind();
 	mesh.sun->render();
@@ -190,11 +190,10 @@ void environment_t::render()
 
 	vec3 pos(floor(camera.position()));
 	matrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
-	//matrix.model = scale(matrix.model, vec3(0.1f));
 	matrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GROUND].texture);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GROUND].id);
 	//checkError("binding TEXTURE_GLOW");
 	mesh.ground->bind();
 
@@ -202,4 +201,55 @@ void environment_t::render()
 	mesh.ground->render();
 
 	//glClear(GL_DEPTH_BUFFER_BIT);
+}
+
+void environment_t::renderShadow()
+{
+	glEnable(GL_CULL_FACE);
+	// Render ground
+	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
+	vec3 pos(floor(camera.position()));
+	shadowMatrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
+	shadowMatrix.update();
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+	mesh.ground->bind();
+	mesh.ground->render();
+}
+
+void loadRecords()
+{
+	ifstream datafs(DATA_RECORD);
+	if (!datafs) {
+		cerr << "Cannot open record file " DATA_RECORD << endl;
+		return;
+	}
+	string line, id;
+	record_t *record = 0;
+	while (getline(datafs, line)) {
+		if (line.empty() || line.at(0) == '#')
+			continue;
+		istringstream ss(line);
+		string param;
+		ss >> param;
+		if (!ss)
+			continue;
+		if (record == 0 && param != "Record")
+			continue;
+		if (param == "Record") {
+			ss >> id;
+			record = &records[id];
+		} else if (param == "Time")
+			ss >> record->time;
+		else if (param == "Camera")
+			ss >> record->camera.pos >> record->camera.rot;
+	}
+}
+
+void loadRecord(record_t &record)
+{
+	camera.setPosition(record.camera.pos);
+	camera.setRotation(record.camera.rot);
+	camera.stop();
+	status.pause(true);
+	environment.update(record.time);
 }
