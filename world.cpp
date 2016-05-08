@@ -128,6 +128,11 @@ void environment_t::update(float time)
 
 direction:
 	light.position = vec3(rotate(quat(), angle, sun.axis) * vec4(sun.initial, 0.f));
+
+	light_t &l = lights[LIGHT_ENV];
+	l.ambient = ambient;
+	l.position = light.position;
+	l.colour = light.intensity;
 }
 
 void environment_t::setup()
@@ -137,6 +142,9 @@ void environment_t::setup()
 	mesh.ground = new Ground;
 	mesh.sun = new Circle(32);
 	bulletAddRigidBody(mesh.ground->createRigidBody(), BULLET_GROUND);
+	light_t &light = lights[LIGHT_ENV];
+	light.enabled = true;
+	light.attenuation = 0.f;
 }
 
 void environment_t::print()
@@ -147,6 +155,16 @@ void environment_t::print()
 void environment_t::render()
 {
 	glEnable(GL_CULL_FACE);
+	if (::status.shadow) {
+		// Render ground
+		uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
+		vec3 pos(floor(camera.position()));
+		shadowMatrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
+		shadowMatrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+		mesh.ground->bind();
+		mesh.ground->render();
+	}
 	glDepthMask(GL_FALSE);
 
 	// Render skybox
@@ -161,7 +179,6 @@ void environment_t::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SKYBOX].id);
-	//checkError("binding TEXTURE_SKYBOX");
 	mesh.skybox->bind();
 	mesh.skybox->render();
 
@@ -181,37 +198,47 @@ void environment_t::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GLOW].id);
-	//checkError("binding TEXTURE_GLOW");
 	mesh.sun->bind();
 	mesh.sun->render();
 
-	// Render ground
-	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, (GLfloat *)&brightness);
+	glDepthMask(GL_TRUE);
+	//glClear(GL_DEPTH_BUFFER_BIT);
+	renderGround();
+}
+
+void environment_t::renderGround()
+{
+	glUseProgram(programs[PROGRAM_TEXTURE_LIGHTING_SHADOW].id);
+	uniformMap &uniforms = programs[PROGRAM_TEXTURE_LIGHTING_SHADOW].uniforms;
+
+	glUniform1i(uniforms[UNIFORM_SAMPLER], 0);
+	glUniform1i(uniforms[UNIFORM_SAMPLER_SHADOW], 1);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_SHADOW], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+
+	glActiveTexture(GL_TEXTURE0 + 1);
+	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
+	glActiveTexture(GL_TEXTURE0);
+
+	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&light.position);
+	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&light.intensity);
+	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
+	setLights(uniforms);
+
+	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&ambient);
+	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
+	glUniform3f(uniforms[UNIFORM_DIFFUSE], 1.f, 1.f, 1.f);
+	glUniform3f(uniforms[UNIFORM_EMISSION], 0.f, 0.f, 0.f);
+	glUniform3f(uniforms[UNIFORM_SPECULAR], 0.f, 0.f, 0.f);
+	glUniform1f(uniforms[UNIFORM_SHININESS], 0.f);
 
 	vec3 pos(floor(camera.position()));
 	matrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
 	matrix.update();
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+	glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GROUND].id);
-	//checkError("binding TEXTURE_GLOW");
-	mesh.ground->bind();
-
-	glDepthMask(GL_TRUE);
-	mesh.ground->render();
-
-	//glClear(GL_DEPTH_BUFFER_BIT);
-}
-
-void environment_t::renderShadow()
-{
-	glEnable(GL_CULL_FACE);
-	// Render ground
-	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
-	vec3 pos(floor(camera.position()));
-	shadowMatrix.model = translate(mat4(), vec3(pos.x, 0.f, pos.z));
-	shadowMatrix.update();
-	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
 	mesh.ground->bind();
 	mesh.ground->render();
 }

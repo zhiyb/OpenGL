@@ -29,13 +29,7 @@ GLFWwindow *window;
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
-struct shadow_t {
-	struct env_t {
-		GLuint texture;
-	} environment;
-	GLuint fbo;
-} shadow;
-
+shadow_t shadow;
 Square *square;
 
 void quit();
@@ -84,10 +78,11 @@ static void renderObjects()
 	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
+	setLights(uniforms);
 
-	for (const pair<string, object_t> &pair: objects) {
-		const object_t &obj = pair.second;
-		matrix.model = translate(mat4(), obj.position);
+	for (const pair<string, object_t> &objpair: objects) {
+		const object_t &obj = objpair.second;
+		matrix.model = translate(mat4(), obj.pos);
 		if (obj.rigidBody)
 			matrix.model = bulletGetMatrix(obj.rigidBody) * matrix.model;
 		matrix.model = scale(matrix.model, obj.model->scale);
@@ -116,10 +111,11 @@ static void renderEnvironmentShadow()
 	glUseProgram(programs[PROGRAM_SHADOW].id);
 	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
 	//environment.renderShadow();
+	camera.render();
 
-	for (const pair<string, object_t> &pair: objects) {
-		const object_t &obj = pair.second;
-		shadowMatrix.model = translate(mat4(), obj.position);
+	for (const pair<string, object_t> &objpair: objects) {
+		const object_t &obj = objpair.second;
+		shadowMatrix.model = translate(mat4(), obj.pos);
 		if (obj.rigidBody)
 			shadowMatrix.model = bulletGetMatrix(obj.rigidBody) * shadowMatrix.model;
 		shadowMatrix.model = scale(shadowMatrix.model, obj.model->scale);
@@ -151,13 +147,16 @@ static void render()
 	// Resolve depth-fighting issues
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(2.f, 4.f);
+	status.shadow = true;
 	renderEnvironmentShadow();
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	glViewport(0, 0, width, height);
+	status.shadow = false;
 
+#ifndef SUBMISSION
 	// Render shadow texture to screen
 	if (status.mode == status_t::EnvShadowMode) {
 		glClearColor(1.f, 1.f, 1.f, 1.f);
@@ -174,6 +173,7 @@ static void render()
 		square->render();
 		return;
 	}
+#endif
 
 	// Render scene
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -208,8 +208,8 @@ void report()
 	clog << "****** Report at " << glfwGetTime() << " seconds ******" << endl;
 	environment.print();
 	camera.print();
-	for (const pair<string, object_t> &pair: objects) {
-		const object_t &obj = pair.second;
+	for (const pair<string, object_t> &objpair: objects) {
+		const object_t &obj = objpair.second;
 		if (!obj.rigidBody)
 			continue;
 		btTransform trans;

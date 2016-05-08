@@ -19,7 +19,8 @@ using namespace std;
 using namespace glm;
 
 unordered_map<string, model_t> models;
-unordered_map<std::string, object_t> objects;
+unordered_map<string, object_t> objects;
+unordered_map<string, light_t> lights;
 
 string basename(string &path)
 {
@@ -190,6 +191,11 @@ GLuint setupPrograms()
 			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting.frag"},
 			{0, NULL}
 		},
+		[PROGRAM_TEXTURE_LIGHTING_SHADOW] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "texture_lighting_shadow.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting_shadow.frag"},
+			{0, NULL}
+		},
 		[PROGRAM_WAVEFRONT] = {
 			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
 			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting_shadow.frag"},
@@ -348,7 +354,7 @@ void loadModels()
 			continue;
 		ss >> model.culling >> model.scale;
 		ss >> model.bullet >> model.mass >> model.upright;
-		clog << "Model " << modelPath << " loading..." << endl;
+		clog << "Loading model\t" << model.id << "\t@ " << modelPath << endl;
 		model.model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
 		if (!model.model)
 			continue;
@@ -386,7 +392,7 @@ void loadObjects()
 
 		if (type == "Model") {
 			string id;
-			ss >> id >> obj.position;
+			ss >> id >> obj.pos;
 			if (!ss)
 				continue;
 			model_t &model = models[id];
@@ -405,19 +411,38 @@ void loadObjects()
 				model.model->createStaticRigidBody(&rigidBodies, to_btVector3(model.scale));
 				for (btRigidBody *rigidBody: rigidBodies) {
 					btVector3 origin = rigidBody->getWorldTransform().getOrigin();
-					rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.position));
+					rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.pos));
 					bulletAddRigidBody(rigidBody, BULLET_GROUND);
 				}
 			} else {		// Use bounding box
 				obj.rigidBody = model.model->createRigidBody(to_btVector3(model.scale), model.mass);
 				btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
-				obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.position));
+				obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.pos));
 				bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
-				obj.position = -model.model->boundingOrigin() * model.scale;
+				obj.pos = -model.model->boundingOrigin() * model.scale;
 				if (obj.model->upright)
 					bulletUprightConstraint(obj.rigidBody);
 			}
 			objects[obj.id] = obj;
 		}
 	}
+}
+
+void setLights(uniformMap &uniforms)
+{
+	int i = 0;
+	for (pair<string, light_t> lightpair: lights) {
+		light_t &light = lightpair.second;
+		if (!light.enabled)
+			continue;
+		glUniform1ui(uniforms[U_LIGHT_ENABLED(i)], light.enabled);
+		glUniform3fv(uniforms[U_LIGHT_AMBIENT(i)], 1, (GLfloat *)&light.ambient);
+		glUniform3fv(uniforms[U_LIGHT_COLOUR(i)], 1, (GLfloat *)&light.colour);
+		glUniform3fv(uniforms[U_LIGHT_POSITION(i)], 1, (GLfloat *)&light.position);
+		glUniform1f(uniforms[U_LIGHT_ATTENUATION(i)], light.attenuation);
+		if (++i == MAX_LIGHTS)
+			return;
+	}
+	while (i != MAX_LIGHTS)
+		glUniform1ui(uniforms[U_LIGHT_ENABLED(i++)], false);
 }

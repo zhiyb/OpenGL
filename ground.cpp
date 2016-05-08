@@ -1,6 +1,6 @@
 #include "ground.h"
 
-#define SCALE	15.f
+#define SCALE	20.f
 
 using namespace glm;
 

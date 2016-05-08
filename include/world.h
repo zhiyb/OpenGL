@@ -37,6 +37,13 @@ struct record_t {
 void loadRecords();
 void loadRecord(record_t &record);
 
+struct shadow_t {
+	struct env_t {
+		GLuint texture;
+	} environment;
+	GLuint fbo;
+};
+
 class environment_t
 {
 public:
@@ -50,7 +57,6 @@ public:
 	void setup();
 	void print();
 	void render();
-	void renderShadow();
 	enum DaylightStatus status() const {return day.status;}
 
 	glm::vec3 ambient;
@@ -59,6 +65,8 @@ public:
 	} light;
 
 private:
+	void renderGround();
+
 	struct {
 		enum DaylightStatus status;
 		struct {
@@ -96,6 +104,7 @@ private:
 
 extern status_t status;
 extern matrix_t matrix, shadowMatrix;
+extern shadow_t shadow;
 extern environment_t environment;
 extern std::unordered_map<std::string, record_t> records;
 

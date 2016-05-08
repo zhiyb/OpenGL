@@ -26,6 +26,9 @@
 #define DATA_RECORDS	DATA_PATH "records.txt"
 #define DATA_OBJECTS	DATA_PATH "objects.txt"
 
+#define MAX_LIGHTS	5
+#define LIGHT_ENV	"ENV"
+
 //#define SUBMISSION
 #define BULLET
 //#define MODELS
@@ -40,6 +43,7 @@
 // Different programs
 enum {
 	PROGRAM_TEXTURE_LIGHTING = 0,
+	PROGRAM_TEXTURE_LIGHTING_SHADOW,
 	PROGRAM_WAVEFRONT,
 	PROGRAM_SHADOW,
 	PROGRAM_TEXTURE_BASIC,
@@ -51,11 +55,11 @@ enum {
 #define UNIFORM_MAT_MODEL	"modelMatrix"
 #define UNIFORM_MAT_NORMAL	"normalMatrix"
 #define UNIFORM_MAT_SHADOW	"shadowMatrix"
-#define UNIFORM_AMBIENT		"ambient"
-#define UNIFORM_DIFFUSE		"diffuse"
-#define UNIFORM_SPECULAR	"specular"
-#define UNIFORM_EMISSION	"emission"
-#define UNIFORM_SHININESS	"shininess"
+#define UNIFORM_AMBIENT		"material.ambient"
+#define UNIFORM_DIFFUSE		"material.diffuse"
+#define UNIFORM_SPECULAR	"material.specular"
+#define UNIFORM_EMISSION	"material.emission"
+#define UNIFORM_SHININESS	"material.shininess"
 #define UNIFORM_VIEWER		"viewer"
 //#define UNIFORM_LIGHT_DIRECTION	"light"
 #define UNIFORM_LIGHT_POSITION	"lightPosition"
@@ -64,6 +68,12 @@ enum {
 #define UNIFORM_COLOUR		"colour"
 #define UNIFORM_SAMPLER		"sampler"
 #define UNIFORM_SAMPLER_SHADOW	"shadowSampler"
+
+#define U_LIGHT_ENABLED(i)	(std::string("lights[" + std::to_string(i) + "].enabled").c_str())
+#define U_LIGHT_AMBIENT(i)	(std::string("lights[" + std::to_string(i) + "].ambient").c_str())
+#define U_LIGHT_COLOUR(i)	(std::string("lights[" + std::to_string(i) + "].colour").c_str())
+#define U_LIGHT_POSITION(i)	(std::string("lights[" + std::to_string(i) + "].position").c_str())
+#define U_LIGHT_ATTENUATION(i)	(std::string("lights[" + std::to_string(i) + "].attenuation").c_str())
 
 // Attribuate locations
 enum {

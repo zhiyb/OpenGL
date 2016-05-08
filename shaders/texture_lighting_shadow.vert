@@ -7,8 +7,10 @@ uniform vec3 viewer;
 uniform mat4 mvpMatrix;
 uniform mat4 modelMatrix;
 uniform mat3 normalMatrix;
+uniform mat4 shadowMatrix;
 
 out VS_FS_INTERFACE {
+	vec4 shadow;
 	vec3 world;
 	vec3 normal;
 	vec3 viewer;
@@ -18,8 +20,10 @@ out VS_FS_INTERFACE {
 void main(void)
 {
 	gl_Position = mvpMatrix * vec4(position, 1.0);
+	vec4 world_pos = modelMatrix * vec4(position, 1.0);
 	vertex.normal = normalize(normalMatrix * normal);
-	vertex.world = vec3(modelMatrix * vec4(position, 1.0));
-	vertex.viewer = normalize(viewer - vertex.world);
+	vertex.viewer = normalize(viewer - vec3(world_pos));
+	vertex.shadow = shadowMatrix * world_pos;
+	vertex.world = vec3(world_pos);
 	vertex.tex = tex;
 }

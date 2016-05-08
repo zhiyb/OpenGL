@@ -3,6 +3,7 @@
 in vec3 position, normal;
 in vec2 tex;
 uniform vec3 viewer;
+
 uniform mat4 mvpMatrix;
 uniform mat4 modelMatrix;
 uniform mat3 normalMatrix;
@@ -23,5 +24,6 @@ void main(void)
 	vertex.normal = normalize(normalMatrix * normal);
 	vertex.viewer = normalize(viewer - vec3(world_pos));
 	vertex.shadow = shadowMatrix * world_pos;
+	vertex.world = vec3(world_pos);
 	vertex.tex = vec2(tex.x, 1.0 - tex.y);
 }

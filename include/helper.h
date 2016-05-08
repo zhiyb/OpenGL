@@ -24,11 +24,20 @@ extern std::unordered_map<std::string, model_t> models;
 
 struct object_t {
 	std::string id;
-	glm::vec3 position;
+	glm::vec3 pos;
 	model_t *model;
 	btRigidBody *rigidBody;
 };
 extern std::unordered_map<std::string, object_t> objects;
+
+struct light_t {
+	bool enabled;
+	glm::vec3 ambient;
+	glm::vec3 colour;
+	glm::vec3 position;
+	float attenuation;
+};
+extern std::unordered_map<std::string, light_t> lights;
 
 std::string basename(std::string &path);
 static inline std::istream &operator>>(std::istream &stream, glm::vec3 &vec)
@@ -57,6 +66,7 @@ GLuint setupPrograms();
 GLuint setupTextures();
 
 texture_t loadTexture(const char *path);
+void setLights(uniformMap &uniforms);
 
 void loadModels();
 void cleanupModels();

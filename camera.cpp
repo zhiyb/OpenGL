@@ -176,12 +176,24 @@ void Camera::stop()
 void Camera::render()
 {
 	glEnable(GL_CULL_FACE);
+	if (status.shadow) {
+		shadowMatrix.model = modelMatrix;
+		shadowMatrix.model = scale(shadowMatrix.model, vec3(CAMERA_SIZE));
+		shadowMatrix.update();
+		uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+		sphere->bind();
+		sphere->render();
+		return;
+	}
+
 	glUseProgram(programs[PROGRAM_TEXTURE_LIGHTING].id);
 	uniformMap &uniforms = programs[PROGRAM_TEXTURE_LIGHTING].uniforms;
 
 	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
 	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&position());
+	setLights(uniforms);
 
 	matrix.model = modelMatrix;
 	matrix.model = scale(matrix.model, vec3(CAMERA_SIZE));
