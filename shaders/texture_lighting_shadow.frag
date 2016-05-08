@@ -11,7 +11,7 @@ struct material_t {
 uniform material_t material;
 
 // Lighting
-const int maxLights = 5;
+const int maxLights = 8;
 struct light_t {
 	bool enabled;
 	vec3 ambient;

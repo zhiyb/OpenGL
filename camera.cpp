@@ -150,7 +150,6 @@ void Camera::updateCB(float time)
 	} else
 		setPosition(pos + forward() * speed * time);
 update:
-	lights[LIGHT_CAMERA].enabled = environment.status() == environment_t::Night;
 	lights[LIGHT_CAMERA].position = position() + (forward() + right() * 0.5f + upward() * -0.5f) * CAMERA_SIZE;
 	updateCalc();
 }
@@ -163,7 +162,7 @@ void Camera::setup()
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
 	bulletAddRigidBody(rigidBody, BULLET_CAMERA);
 	light_t &light = lights[LIGHT_CAMERA];
-	light.enabled = true;
+	light.daytime = false;
 	light.attenuation = 0.9f;
 	light.colour = vec3(1.f);
 	light.ambient = vec3(0.f);
@@ -220,21 +219,7 @@ void Camera::render()
 	glUniform3f(uniforms[UNIFORM_SPECULAR], 0.2f, 0.4f, 1.f);
 	glUniform1f(uniforms[UNIFORM_SHININESS], 10.f);
 
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_CAMERA].id);
-	sphere->bind();
-	sphere->render();
-
-	if (!lights[LIGHT_CAMERA].enabled)
-		return;
-	glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
-	uniformMap &u = programs[PROGRAM_TEXTURE_BASIC].uniforms;
-
-	matrix.model = translate(mat4(), lights[LIGHT_CAMERA].position);
-	matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
-	matrix.update();
-	glUniformMatrix4fv(u[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-	glUniform3f(u[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
-
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
 	sphere->bind();
 	sphere->render();
 }

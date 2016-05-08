@@ -77,8 +77,9 @@ void initTour()
 		return;
 	tour.step = 0;
 	status.pauseDuration = tour.timeElapsed = glfwGetTime();
-	loadWaypoint(0);
 	status.mode = status_t::TourMode;
+	status.run = true;
+	loadWaypoint(0);
 }
 
 void updateTour()

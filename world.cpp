@@ -143,7 +143,7 @@ void environment_t::setup()
 	mesh.sun = new Circle(32);
 	bulletAddRigidBody(mesh.ground->createRigidBody(), BULLET_GROUND);
 	light_t &light = lights[LIGHT_ENV];
-	light.enabled = true;
+	light.daytime = true;
 	light.attenuation = 0.f;
 	light.shadow = 1;
 }

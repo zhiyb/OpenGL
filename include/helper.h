@@ -31,7 +31,7 @@ struct object_t {
 extern std::unordered_map<std::string, object_t> objects;
 
 struct light_t {
-	bool enabled;
+	bool daytime;
 	glm::vec3 ambient;
 	glm::vec3 colour;
 	glm::vec3 position;

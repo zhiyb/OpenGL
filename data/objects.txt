@@ -2,6 +2,7 @@
 
 # Name	Type	Parameters
 # Type:Model	ID	Position
+# Type:Light	Daytime	Position	Attenuation	Colour	Ambient
 
 Arena	Model	Dunwell	0 0.1 0
 
@@ -17,3 +18,11 @@ nMiku2	Model	nMiku	-0.4 0.13 0.2
 nMiku3	Model	nMiku	-0.2 0.13 0.2
 nMiku4	Model	nMiku	0 0.13 0.2
 nMiku5	Model	nMiku	0.2 0.13 0.2
+
+CAM	Light	0	0 0 0	10	0.8 0.8 0.8	0.1 0.1 0.1
+Light0	Light	0	-3.01686 1.0 3.81648	0.5	1 1 1	0.2 0.2 0.2
+Light1	Light	0	-3.12127 1.0 -4.11016	0.5	1 1 1	0.2 0.2 0.2
+Light2	Light	0	-3.01185 1.0 0.00246523	0.5	1 1 1	0.2 0.2 0.2
+Light3	Light	0	3.39872 1.17334 4.02558	0.5	1 1 1	0.2 0.2 0.2
+Light4	Light	0	3.39789 1.14577 -0.195872	0.5	1 1 1	0.2 0.2 0.2
+Light5	Light	0	3.39462 1.14776 -4.01901	0.5	1 1 1	0.2 0.2 0.2

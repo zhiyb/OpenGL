@@ -32,6 +32,7 @@ texture_t textures[TEXTURE_COUNT];
 
 shadow_t shadow;
 Square *square;
+Sphere *sphere;
 
 void quit();
 
@@ -59,6 +60,7 @@ static void setupShadowStorage()
 void setupObjects()
 {
 	square = new Square;
+	sphere = new Sphere(8);
 	loadObjects();
 }
 
@@ -96,6 +98,53 @@ static void renderObjects()
 			glDisable(GL_CULL_FACE);
 		obj.model->model->bind();
 		obj.model->model->render();
+	}
+
+	glEnable(GL_CULL_FACE);
+	for (pair<string, light_t> lightpair: lights) {
+		light_t &light = lightpair.second;
+		if (environment.status() == environment_t::Night)
+			continue;
+		if (lightpair.first == LIGHT_ENV)
+			continue;
+
+		matrix.model = translate(mat4(), light.position);
+		if (lightpair.first == LIGHT_CAMERA)
+			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
+		else
+			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE) * 100.f);
+		matrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
+		glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
+
+		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
+		sphere->bind();
+		sphere->render();
+	}
+
+	for (pair<string, light_t> lightpair: lights) {
+		light_t &light = lightpair.second;
+		if (!light.daytime && environment.status() != environment_t::Night)
+			continue;
+		if (lightpair.first == LIGHT_ENV)
+			continue;
+
+		glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
+		uniformMap &uniform = programs[PROGRAM_TEXTURE_BASIC].uniforms;
+
+		matrix.model = translate(mat4(), light.position);
+		if (lightpair.first == LIGHT_CAMERA)
+			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
+		else
+			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE) * 100.f);
+		matrix.update();
+		glUniformMatrix4fv(uniform[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
+		glUniform3f(uniform[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
+
+		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
+		sphere->bind();
+		sphere->render();
 	}
 }
 
@@ -410,9 +459,9 @@ int main(int /*argc*/, char */*argv*/[])
 	loadTour();
 	loadRecords();
 	loadModels();
-	setupObjects();
 	camera.setup();
 	environment.setup();
+	setupObjects();
 	setupShadowStorage();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);

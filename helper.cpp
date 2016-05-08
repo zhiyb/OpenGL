@@ -11,6 +11,7 @@
 #include "helper.h"
 #include "bullet.h"
 #include "global.h"
+#include "world.h"
 #include "wavefront.h"
 
 //#define DEBUG_UNIFORMS
@@ -237,13 +238,13 @@ GLuint setupTextures()
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_WHITE]		= {0},
 		// sphere.png: Adapted from http://paulbourke.net/texture_colour/perlin/
-		[TEXTURE_CAMERA]	= {TEXTURE_PATH "sphere.png"},
+		[TEXTURE_SPHERE]	= {TEXTURE_PATH "sphere.png"},
 		//[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
 		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
 		// glow1.png: http://vterrain.org/Atmosphere/
 		[TEXTURE_GLOW]		= {TEXTURE_PATH "glow1.png"},
 		// diamond_block.png: Minecraft
-		[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
+		//[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
 		// skybox3.png: http://scmapdb.com/skybox:sky-blu
 		[TEXTURE_SKYBOX]	= {TEXTURE_PATH "skybox3.png"},
 		[TEXTURE_GROUND]	= {TEXTURE_PATH "ground.png"},
@@ -384,18 +385,19 @@ void loadObjects()
 		if (line.empty() || line.at(0) == '#')
 			continue;
 		istringstream ss(line);
-		object_t obj;
-		string type;
-		ss >> obj.id >> type;
-		if (!ss)
+		string id, type;
+		ss >> id >> type;
+		if (!ss || id.empty())
 			continue;
 
 		if (type == "Model") {
-			string id;
-			ss >> id >> obj.pos;
+			object_t obj;
+			obj.id = id;
+			string modelID;
+			ss >> modelID >> obj.pos;
 			if (!ss)
 				continue;
-			model_t &model = models[id];
+			model_t &model = models[modelID];
 			if (!model.model || !model.model->isValid())
 				continue;
 
@@ -424,6 +426,12 @@ void loadObjects()
 					bulletUprightConstraint(obj.rigidBody);
 			}
 			objects[obj.id] = obj;
+		} else if (type == "Light") {
+			light_t light;
+			ss >> light.daytime >> light.position;
+			ss >> light.attenuation >> light.colour >> light.ambient;
+			lights[id] = light;
+			//clog << "Light: " << id << ", " << light.position << endl;
 		}
 	}
 }
@@ -433,9 +441,9 @@ void setLights(uniformMap &uniforms)
 	int i = 0;
 	for (pair<string, light_t> lightpair: lights) {
 		light_t &light = lightpair.second;
-		if (!light.enabled)
+		if (!light.daytime && environment.status() != environment_t::Night)
 			continue;
-		glUniform1ui(uniforms[U_LIGHT_ENABLED(i)], light.enabled);
+		glUniform1ui(uniforms[U_LIGHT_ENABLED(i)], true);
 		glUniform3fv(uniforms[U_LIGHT_AMBIENT(i)], 1, (GLfloat *)&light.ambient);
 		glUniform3fv(uniforms[U_LIGHT_COLOUR(i)], 1, (GLfloat *)&light.colour);
 		glUniform3fv(uniforms[U_LIGHT_POSITION(i)], 1, (GLfloat *)&light.position);

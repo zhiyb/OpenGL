@@ -2,7 +2,8 @@
 
 # Day light cycle (seconds): sunrise, daytime, sunset, night
 #Day	5	150	30	10
-Day	10	10	8	10
+Day	10	10	9	10
+#Day	1	1	1	100
 # Sunrise, colour components increasing speed
 Sunrise	2 1.1 1
 # Daytime, light intensity, ambient intensity
