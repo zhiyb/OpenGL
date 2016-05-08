@@ -3,7 +3,6 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <glm/gtx/polar_coordinates.hpp>
 #include "helper.h"
 #include "world.h"
 #include "global.h"
@@ -92,6 +91,7 @@ void updateTour()
 		diff = time - tour.timeElapsed;
 		if (tour.step + 1 == waypoints.size()) {
 			quitTour();
+			clog << "Tour finished." << endl;
 			return;
 		}
 	}

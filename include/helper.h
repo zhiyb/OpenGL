@@ -25,6 +25,8 @@ extern std::unordered_map<std::string, model_t> models;
 struct object_t {
 	std::string id;
 	glm::vec3 pos;
+	glm::quat rot;
+	bool animation;
 	model_t *model;
 	btRigidBody *rigidBody;
 };

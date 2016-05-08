@@ -29,5 +29,6 @@ glm::mat4 bulletGetMatrix(btRigidBody *rigidBody);
 static inline glm::vec3 from_btVector3(const btVector3 &v) {return glm::vec3(v.x(), v.y(), v.z());}
 static inline btVector3 to_btVector3(const glm::vec3 &v) {return btVector3(v.x, v.y, v.z);}
 static inline glm::quat from_btQuaternion(const btQuaternion &q) {return glm::quat(q.x(), q.y(), q.z(), q.w());}
+static inline btQuaternion to_btQuaternion(const glm::quat &q) {return btQuaternion(q.x, q.y, q.z, q.w);}
 
 #endif // BULLET_H

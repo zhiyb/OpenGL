@@ -394,8 +394,8 @@ void loadObjects()
 			object_t obj;
 			obj.id = id;
 			string modelID;
-			ss >> modelID >> obj.pos;
-			if (!ss)
+			ss >> modelID >> obj.pos >> obj.rot >> obj.animation;
+			if (modelID.empty())
 				continue;
 			model_t &model = models[modelID];
 			if (!model.model || !model.model->isValid())
@@ -420,16 +420,19 @@ void loadObjects()
 				obj.rigidBody = model.model->createRigidBody(to_btVector3(model.scale), model.mass);
 				btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
 				obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.pos));
+				obj.rigidBody->getWorldTransform().setRotation(to_btQuaternion(obj.rot));
 				bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
 				obj.pos = -model.model->boundingOrigin() * model.scale;
-				if (obj.model->upright)
-					bulletUprightConstraint(obj.rigidBody);
+				//if (obj.model->upright)
+				//	bulletUprightConstraint(obj.rigidBody);
+				obj.rigidBody->setAngularFactor(btVector3(0.f, 0.001f, 0.f));
 			}
 			objects[obj.id] = obj;
 		} else if (type == "Light") {
 			light_t light;
 			ss >> light.daytime >> light.position;
 			ss >> light.attenuation >> light.colour >> light.ambient;
+			light.shadow = false;
 			lights[id] = light;
 			//clog << "Light: " << id << ", " << light.position << endl;
 		}

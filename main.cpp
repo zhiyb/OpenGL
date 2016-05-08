@@ -11,6 +11,7 @@
 #include "camera.h"
 #include "bullet.h"
 #include "tour.h"
+#include "animation.h"
 
 #include "sphere.h"
 #include "square.h"
@@ -181,6 +182,26 @@ static void renderEnvironmentShadow()
 		obj.model->model->render();
 	}
 
+	glEnable(GL_CULL_FACE);
+	for (pair<string, light_t> lightpair: lights) {
+		light_t &light = lightpair.second;
+		if (environment.status() == environment_t::Night)
+			continue;
+		if (lightpair.first == LIGHT_ENV)
+			continue;
+
+		shadowMatrix.model = translate(mat4(), light.position);
+		if (lightpair.first == LIGHT_CAMERA)
+			shadowMatrix.model = scale(shadowMatrix.model, vec3(LIGHT_SIZE));
+		else
+			shadowMatrix.model = scale(shadowMatrix.model, vec3(LIGHT_SIZE) * 100.f);
+		shadowMatrix.update();
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+
+		sphere->bind();
+		sphere->render();
+	}
+
 	static const mat4 scaleBiasMatrix = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
 						 vec4(0.0f, 0.5f, 0.0f, 0.0f),
 						 vec4(0.0f, 0.0f, 0.5f, 0.0f),
@@ -249,9 +270,10 @@ void step(bool first = false)
 	if (first || (status.run && diff > 0.f)) {
 		//clog << __func__ << ": " << diff << endl;
 		time -= status.pauseDuration;
+		environment.update(time);
+		animation(time);
 		// Step 1 bullet simulation frame at first time
 		bulletUpdate(first ? 0.f : diff);
-		environment.update(time);
 	}
 }
 

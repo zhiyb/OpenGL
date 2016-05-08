@@ -1,23 +1,26 @@
 # Objects
 
 # Name	Type	Parameters
-# Type:Model	ID	Position
+# Type:Model	ID	Position	Rotation	Random animation
 # Type:Light	Daytime	Position	Attenuation	Colour	Ambient
 
 Arena	Model	Dunwell	0 0.1 0
 
 #Miku	Model	Miku	0.3 0.13 0
 
-nMiku0	Model	nMiku	0 0.13 0
-nRin0	Model	nRin	-0.2 0.13 0
-nLen0	Model	nLen	-0.4 0.13 0
-nGUMI0	Model	nGUMI	-0.6 0.13 0
+nMiku0	Model	nMiku	-0.5 0.12 0.5	0 -1 0 0	1
+nRin0	Model	nRin	-0.3 0.12 0.5	0 -1 0 0	1
+nMiku1	Model	nMiku	-0.1 0.12 0.5	0 -1 0 0	1
+nRin1	Model	nRin	 0.1 0.12 0.5	0 -1 0 0	1
+nMiku2	Model	nMiku	 0.3 0.12 0.5	0 -1 0 0	1
+nRin2	Model	nRin	 0.5 0.12 0.5	0 -1 0 0	1
 
-nMiku1	Model	nMiku	-0.6 0.13 0.2
-nMiku2	Model	nMiku	-0.4 0.13 0.2
-nMiku3	Model	nMiku	-0.2 0.13 0.2
-nMiku4	Model	nMiku	0 0.13 0.2
-nMiku5	Model	nMiku	0.2 0.13 0.2
+nLen0	Model	nLen	-0.5 0.12 -0.5	0 0 0 1		1
+nGUMI0	Model	nGUMI	-0.3 0.12 -0.5	0 0 0 1		1
+nLen1	Model	nLen	-0.1 0.12 -0.5	0 0 0 1		1
+nGUMI1	Model	nGUMI	 0.1 0.12 -0.5	0 0 0 1		1
+nLen2	Model	nLen	 0.3 0.12 -0.5	0 0 0 1		1
+nGUMI2	Model	nGUMI	 0.5 0.12 -0.5	0 0 0 1		1
 
 CAM	Light	0	0 0 0	10	0.8 0.8 0.8	0.1 0.1 0.1
 Light0	Light	0	-3.01686 1.0 3.81648	0.5	1 1 1	0.2 0.2 0.2

@@ -69,6 +69,7 @@ helper.cpp	Some program helper functions
 main.cpp	Main control loop and object rendering
 tour.cpp	Tour mode related
 world.cpp	Environment, status, etc.
+animation.cpp	Random animation
 
 object.cpp	Base class for objects
 skybox.cpp	Skybox (enclosed cube)
