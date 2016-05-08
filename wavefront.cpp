@@ -32,7 +32,6 @@ void Wavefront::useMaterial(const int i)
 		glBindTexture(GL_TEXTURE_2D, textures[material.diffuse_texname]);
 
 	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
-	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3fv(uniforms[UNIFORM_AMBIENT], 1, material.ambient);
 	glUniform3fv(uniforms[UNIFORM_DIFFUSE], 1, material.diffuse);
 	glUniform3fv(uniforms[UNIFORM_EMISSION], 1, material.emission);

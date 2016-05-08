@@ -35,6 +35,7 @@ struct light_t {
 	glm::vec3 ambient;
 	glm::vec3 colour;
 	glm::vec3 position;
+	GLint shadow;
 	float attenuation;
 };
 extern std::unordered_map<std::string, light_t> lights;

@@ -7,7 +7,7 @@
 
 #include "sphere.h"
 
-#define CAMERA_FOLLOW
+//#define CAMERA_FOLLOW
 
 #define CAMERA_MOVEMENT	0.02f
 #define CAMERA_ROTATE	(2.f * PI / 180.f)
@@ -17,7 +17,7 @@
 #ifdef CAMERA_FOLLOW
 #define CAMERA_HEIGHT	(CAMERA_SIZE * 1.f)
 #else
-#define CAMERA_HEIGHT	(CAMERA_SIZE * 10.f)
+#define CAMERA_HEIGHT	(CAMERA_SIZE * 2.f)
 #endif
 
 #define CAMERA_INIT_POS	glm::vec3(0.f, 0.16f + CAMERA_HEIGHT, 1.f)
@@ -145,6 +145,7 @@ void Camera::updateCB(float time)
 	} else
 		pos += forward() * speed * time;
 	updateCalc();
+	lights[LIGHT_CAMERA].position = position() + forward() * CAMERA_SIZE;
 }
 
 void Camera::setup()
@@ -154,6 +155,12 @@ void Camera::setup()
 	rigidBody = sphere->createRigidBody(60.f, CAMERA_SIZE, t);
 	rigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
 	bulletAddRigidBody(rigidBody, BULLET_CAMERA);
+	light_t &light = lights[LIGHT_CAMERA];
+	light.enabled = true;
+	light.attenuation = 0.8f;
+	light.colour = vec3(0.8f);
+	light.ambient = vec3(0.1f);
+	light.shadow = 0;
 }
 
 void Camera::reset()
@@ -190,8 +197,6 @@ void Camera::render()
 	glUseProgram(programs[PROGRAM_TEXTURE_LIGHTING].id);
 	uniformMap &uniforms = programs[PROGRAM_TEXTURE_LIGHTING].uniforms;
 
-	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
-	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&position());
 	setLights(uniforms);
 
@@ -202,7 +207,6 @@ void Camera::render()
 	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
 	glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
 
-	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&environment.ambient);
 	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
 	glUniform3f(uniforms[UNIFORM_DIFFUSE], 1.f, 1.f, 1.f);
 	glUniform3f(uniforms[UNIFORM_EMISSION], 0.f, 0.f, 0.f);

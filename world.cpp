@@ -145,6 +145,7 @@ void environment_t::setup()
 	light_t &light = lights[LIGHT_ENV];
 	light.enabled = true;
 	light.attenuation = 0.f;
+	light.shadow = 1;
 }
 
 void environment_t::print()
@@ -152,7 +153,7 @@ void environment_t::print()
 	clog << "Environment at " << time << " seconds" << endl;
 }
 
-void environment_t::render()
+void environment_t::renderSkybox()
 {
 	glEnable(GL_CULL_FACE);
 	if (::status.shadow) {
@@ -203,7 +204,6 @@ void environment_t::render()
 
 	glDepthMask(GL_TRUE);
 	//glClear(GL_DEPTH_BUFFER_BIT);
-	renderGround();
 }
 
 void environment_t::renderGround()
@@ -219,14 +219,11 @@ void environment_t::renderGround()
 	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
 	glActiveTexture(GL_TEXTURE0);
 
-	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&light.position);
-	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&light.intensity);
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 	setLights(uniforms);
 
 	glUniform3fv(uniforms[UNIFORM_ENVIRONMENT], 1, (GLfloat *)&ambient);
 	glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
-	glUniform3f(uniforms[UNIFORM_DIFFUSE], 1.f, 1.f, 1.f);
+	glUniform3f(uniforms[UNIFORM_DIFFUSE], 0.8f, 0.8f, 0.8f);
 	glUniform3f(uniforms[UNIFORM_EMISSION], 0.f, 0.f, 0.f);
 	glUniform3f(uniforms[UNIFORM_SPECULAR], 0.f, 0.f, 0.f);
 	glUniform1f(uniforms[UNIFORM_SHININESS], 0.f);

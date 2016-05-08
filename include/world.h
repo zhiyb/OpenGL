@@ -56,7 +56,8 @@ public:
 	void update(float time);
 	void setup();
 	void print();
-	void render();
+	void renderSkybox();
+	void renderGround();
 	enum DaylightStatus status() const {return day.status;}
 
 	glm::vec3 ambient;
@@ -65,7 +66,6 @@ public:
 	} light;
 
 private:
-	void renderGround();
 
 	struct {
 		enum DaylightStatus status;

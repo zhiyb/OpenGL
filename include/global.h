@@ -28,6 +28,7 @@
 
 #define MAX_LIGHTS	5
 #define LIGHT_ENV	"ENV"
+#define LIGHT_CAMERA	"CAM"
 
 //#define SUBMISSION
 #define BULLET
@@ -61,10 +62,6 @@ enum {
 #define UNIFORM_EMISSION	"material.emission"
 #define UNIFORM_SHININESS	"material.shininess"
 #define UNIFORM_VIEWER		"viewer"
-//#define UNIFORM_LIGHT_DIRECTION	"light"
-#define UNIFORM_LIGHT_POSITION	"lightPosition"
-#define UNIFORM_LIGHT_INTENSITY	"lightIntensity"
-#define UNIFORM_ENVIRONMENT	"environment"
 #define UNIFORM_COLOUR		"colour"
 #define UNIFORM_SAMPLER		"sampler"
 #define UNIFORM_SAMPLER_SHADOW	"shadowSampler"
@@ -74,6 +71,7 @@ enum {
 #define U_LIGHT_COLOUR(i)	(std::string("lights[" + std::to_string(i) + "].colour").c_str())
 #define U_LIGHT_POSITION(i)	(std::string("lights[" + std::to_string(i) + "].position").c_str())
 #define U_LIGHT_ATTENUATION(i)	(std::string("lights[" + std::to_string(i) + "].attenuation").c_str())
+#define U_LIGHT_SHADOW(i)	(std::string("lights[" + std::to_string(i) + "].shadow").c_str())
 
 // Attribuate locations
 enum {

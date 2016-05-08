@@ -13,17 +13,17 @@ out VS_FS_INTERFACE {
 	vec4 shadow;
 	vec3 world;
 	vec3 normal;
-	vec3 viewer;
+	vec3 eye;
 	vec2 tex;
 } vertex;
 
 void main(void)
 {
 	gl_Position = mvpMatrix * vec4(position, 1.0);
-	vec4 world_pos = modelMatrix * vec4(position, 1.0);
-	vertex.normal = normalize(normalMatrix * normal);
-	vertex.viewer = normalize(viewer - vec3(world_pos));
-	vertex.shadow = shadowMatrix * world_pos;
-	vertex.world = vec3(world_pos);
+	vec4 world = modelMatrix * vec4(position, 1.0);
+	vertex.normal = normalMatrix * normal;
+	vertex.eye = viewer - vec3(world);
+	vertex.shadow = shadowMatrix * world;
+	vertex.world = vec3(world);
 	vertex.tex = vec2(tex.x, 1.0 - tex.y);
 }

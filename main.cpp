@@ -75,8 +75,6 @@ static void renderObjects()
 	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
 	glActiveTexture(GL_TEXTURE0);
 
-	glUniform3fv(uniforms[UNIFORM_LIGHT_POSITION], 1, (GLfloat *)&environment.light.position);
-	glUniform3fv(uniforms[UNIFORM_LIGHT_INTENSITY], 1, (GLfloat *)&environment.light.intensity);
 	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
 	setLights(uniforms);
 
@@ -178,8 +176,9 @@ static void render()
 	// Render scene
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	environment.render();
+	environment.renderSkybox();
 	camera.render();
+	environment.renderGround();
 	renderObjects();
 }
 
@@ -227,7 +226,7 @@ static void refreshCB(GLFWwindow *window)
 	glViewport(0, 0, width, height);
 	//GLfloat asp = (GLfloat)height / (GLfloat)width;
 	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.02f, 30.f);
+	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 30.f);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)

@@ -440,6 +440,7 @@ void setLights(uniformMap &uniforms)
 		glUniform3fv(uniforms[U_LIGHT_COLOUR(i)], 1, (GLfloat *)&light.colour);
 		glUniform3fv(uniforms[U_LIGHT_POSITION(i)], 1, (GLfloat *)&light.position);
 		glUniform1f(uniforms[U_LIGHT_ATTENUATION(i)], light.attenuation);
+		glUniform1i(uniforms[U_LIGHT_SHADOW(i)], light.shadow);
 		if (++i == MAX_LIGHTS)
 			return;
 	}
