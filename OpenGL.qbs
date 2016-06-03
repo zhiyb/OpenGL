@@ -1,7 +1,9 @@
 import qbs
 
-CppApplication {
+Product {
     property string libraries: "D:\\Programs\\misc\\OpenGL"
+    type: "application"
+    Depends {name: "cpp"}
 
     consoleApplication: true
     cpp.cxxLanguageVersion: "c++11"
@@ -19,10 +21,12 @@ CppApplication {
         libraries + "/glew-1.13.0/lib/Release/Win32",
         libraries + "/glfw-3.1.2.bin.WIN32/lib-mingw-w64",
     ]
-    cpp.linkerFlags: [
-        "-lBulletDynamics_gmake", "-lBulletCollision_gmake", "-lLinearMath_gmake",
-        "-lglew32s",
-        "-lglfw3", "-lgdi32", "-lopengl32",
+    cpp.staticLibraries: [
+        "BulletDynamics_gmake", "BulletCollision_gmake", "LinearMath_gmake",
+        "glew32s", "glfw3",
+    ]
+    cpp.dynamicLibraries: [
+        "gdi32", "opengl32",
     ]
 
     Group {
