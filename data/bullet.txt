@@ -1,8 +1,0 @@
-# Bullet parameters
-
-# Gravity
-Gravity	0 -9.81 0
-
-# Restitution, friction, linear damping, angular damping
-Ground	0.2	1.0	0.8	0.8
-Camera	0	1	0.8	0.8

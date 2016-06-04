@@ -9,19 +9,12 @@
 #include "stb_image.h"
 
 #include "helper.h"
-#include "bullet.h"
 #include "global.h"
-#include "world.h"
-#include "wavefront.h"
 
 //#define DEBUG_UNIFORMS
 
 using namespace std;
 using namespace glm;
-
-unordered_map<string, model_t> models;
-unordered_map<string, object_t> objects;
-unordered_map<string, light_t> lights;
 
 string basename(string &path)
 {
@@ -187,29 +180,14 @@ static void setupUniforms(GLuint index)
 GLuint setupPrograms()
 {
 	static const shader_t shaders[PROGRAM_COUNT][3] = {
-		[PROGRAM_TEXTURE_LIGHTING] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "texture_lighting.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting.frag"},
+		[PROGRAM_BACKGROUND] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "background.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "background.frag"},
 			{0, NULL}
 		},
-		[PROGRAM_TEXTURE_LIGHTING_SHADOW] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "texture_lighting_shadow.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting_shadow.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_WAVEFRONT] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "wavefront.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_lighting_shadow.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_SHADOW] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "basic.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "shadow.frag"},
-			{0, NULL}
-		},
-		[PROGRAM_TEXTURE_BASIC] = {
-			{GL_VERTEX_SHADER, SHADER_PATH "texture_basic.vert"},
-			{GL_FRAGMENT_SHADER, SHADER_PATH "texture_basic.frag"},
+		[PROGRAM_TEXTURED_BASIC] = {
+			{GL_VERTEX_SHADER, SHADER_PATH "textured_basic.vert"},
+			{GL_FRAGMENT_SHADER, SHADER_PATH "textured_basic.frag"},
 			{0, NULL}
 		},
 	};
@@ -220,7 +198,6 @@ GLuint setupPrograms()
 			return 1;
 		programs[idx].id = program;
 		glBindAttribLocation(program, ATTRIB_POSITION, "position");
-		glBindAttribLocation(program, ATTRIB_NORMAL, "normal");
 		glBindAttribLocation(program, ATTRIB_TEXCOORD, "tex");
 		checkError("binding attribuates");
 		if (setupProgramFromFiles(program, shaders[idx]) != 0)
@@ -237,18 +214,8 @@ GLuint setupTextures()
 		const char *file;
 	} textureInfo[TEXTURE_COUNT] = {
 		[TEXTURE_WHITE]		= {0},
-		// sphere.png: Adapted from http://paulbourke.net/texture_colour/perlin/
-		[TEXTURE_SPHERE]	= {TEXTURE_PATH "sphere.png"},
-		//[TEXTURE_SPHERE]	= {TEXTURE_PATH "earth.png"},
-		//[TEXTURE_FIREMAP]		= {TEXTURE_PATH "firemap.png"},
-		// glow1.png: http://vterrain.org/Atmosphere/
-		[TEXTURE_GLOW]		= {TEXTURE_PATH "glow1.png"},
-		// diamond_block.png: Minecraft
-		//[TEXTURE_CUBE]		= {TEXTURE_PATH "diamond_block.png"},
-		// skybox3.png: http://scmapdb.com/skybox:sky-blu
-		[TEXTURE_SKYBOX]	= {TEXTURE_PATH "skybox3.png"},
-		[TEXTURE_GROUND]	= {TEXTURE_PATH "ground.png"},
-		//[TEXTURE_GROUND_BUMP]	= {TEXTURE_PATH "ground_bump.png"},
+		[TEXTURE_BIRD]		= {TEXTURE_PATH "bird.png"},
+		[TEXTURE_PIPE]		= {TEXTURE_PATH "pipe.png"},
 		[TEXTURE_DEBUG]		= {TEXTURE_PATH "debug.png"},
 	};
 
@@ -334,141 +301,4 @@ texture_t loadTexture(const char *path)
 		tex.id = 0;
 	}
 	return tex;
-}
-
-void loadModels()
-{
-	ifstream datafs(DATA_MODELS);
-	if (!datafs) {
-		cerr << "Cannot open model description file " DATA_MODELS << endl;
-		return;
-	}
-	string line;
-	while (getline(datafs, line)) {
-		if (line.empty() || line.at(0) == '#')
-			continue;
-		istringstream ss(line);
-		string modelPath, mtlPath, texPath;
-		model_t model;
-		ss >> model.id >> modelPath >> mtlPath >> texPath;
-		if (!ss)
-			continue;
-		ss >> model.culling >> model.scale;
-		ss >> model.bullet >> model.mass >> model.upright;
-		clog << "Loading model\t" << model.id << "\t@ " << modelPath << endl;
-		model.model = new Wavefront(modelPath.c_str(), mtlPath.c_str(), texPath.c_str());
-		if (!model.model)
-			continue;
-		if (!model.model->isValid()) {
-			delete model.model;
-			continue;
-		}
-		models[model.id] = model;
-	}
-}
-
-void cleanupModels()
-{
-	for (pair<string, model_t> model: models)
-		delete model.second.model;
-}
-
-void loadObjects()
-{
-	ifstream datafs(DATA_OBJECTS);
-	if (!datafs) {
-		cerr << "Cannot open object description file " DATA_OBJECTS << endl;
-		return;
-	}
-	string line;
-	while (getline(datafs, line)) {
-		if (line.empty() || line.at(0) == '#')
-			continue;
-		istringstream ss(line);
-		string id, type;
-		ss >> id >> type;
-		if (!ss || id.empty())
-			continue;
-
-		if (type == "Model") {
-			object_t obj;
-			obj.id = id;
-			string modelID;
-			ss >> modelID >> obj.pos >> obj.rot >> obj.animation;
-			if (modelID.empty())
-				continue;
-			model_t &model = models[modelID];
-			if (!model.model || !model.model->isValid())
-				continue;
-
-			//clog << "Object " << obj.id << " loading..." << endl;
-			obj.model = &model;
-			obj.rigidBody = 0;
-			if (!model.bullet) {
-				objects[obj.id] = obj;
-				continue;
-			}
-			if (!model.mass) {	// Stationary object
-				vector<btRigidBody *> rigidBodies;
-				model.model->createStaticRigidBody(&rigidBodies, to_btVector3(model.scale));
-				for (btRigidBody *rigidBody: rigidBodies) {
-					btVector3 origin = rigidBody->getWorldTransform().getOrigin();
-					rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.pos));
-					bulletAddRigidBody(rigidBody, BULLET_GROUND);
-				}
-			} else {		// Use bounding box
-				obj.rigidBody = model.model->createRigidBody(to_btVector3(model.scale), model.mass);
-				btVector3 origin = obj.rigidBody->getWorldTransform().getOrigin();
-				obj.rigidBody->getWorldTransform().setOrigin(origin + to_btVector3(obj.pos));
-				obj.rigidBody->getWorldTransform().setRotation(to_btQuaternion(obj.rot));
-				bulletAddRigidBody(obj.rigidBody, BULLET_GROUND);
-				obj.pos = -model.model->boundingOrigin() * model.scale;
-				//if (obj.model->upright)
-				//	bulletUprightConstraint(obj.rigidBody);
-				obj.rigidBody->setAngularFactor(btVector3(0.f, 0.001f, 0.f));
-			}
-			objects[obj.id] = obj;
-		} else if (type == "Light") {
-			light_t light;
-			ss >> light.daytime >> light.position;
-			ss >> light.attenuation >> light.colour >> light.ambient;
-			light.shadow = false;
-			lights[id] = light;
-			//clog << "Light: " << id << ", " << light.position << endl;
-		}
-	}
-}
-
-void setLights(uniformMap &uniforms)
-{
-	int i = 0;
-	for (pair<string, light_t> lightpair: lights) {
-		light_t &light = lightpair.second;
-		if (!light.daytime && environment.status() != environment_t::Night)
-			continue;
-		glUniform1ui(uniforms[U_LIGHT_ENABLED(i)], true);
-		glUniform3fv(uniforms[U_LIGHT_AMBIENT(i)], 1, (GLfloat *)&light.ambient);
-		glUniform3fv(uniforms[U_LIGHT_COLOUR(i)], 1, (GLfloat *)&light.colour);
-		glUniform3fv(uniforms[U_LIGHT_POSITION(i)], 1, (GLfloat *)&light.position);
-		glUniform1f(uniforms[U_LIGHT_ATTENUATION(i)], light.attenuation);
-		glUniform1i(uniforms[U_LIGHT_SHADOW(i)], light.shadow);
-		if (++i == MAX_LIGHTS)
-			return;
-	}
-	while (i != MAX_LIGHTS)
-		glUniform1ui(uniforms[U_LIGHT_ENABLED(i++)], false);
-}
-
-void printObjects()
-{
-	for (const pair<string, object_t> &objpair: objects) {
-		const object_t &obj = objpair.second;
-		if (!obj.rigidBody)
-			continue;
-		btTransform trans;
-		obj.rigidBody->getMotionState()->getWorldTransform(trans);
-		vec3 pos = from_btVector3(trans.getOrigin()) - ((Wavefront *)obj.model)->boundingOrigin() * obj.model->scale;
-		quat rot = from_btQuaternion(trans.getRotation());
-		clog << obj.id << "\t@" << pos << ",\t" << rot << endl;
-	}
 }

@@ -22,15 +22,6 @@ void Object::setupVAO()
 		glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	}
 
-	if (!normals.empty()) {
-		GLuint bNormal;
-		glGenBuffers(1, &bNormal);
-		glBindBuffer(GL_ARRAY_BUFFER, bNormal);
-		glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), normals.data(), GL_STATIC_DRAW);
-		glEnableVertexAttribArray(ATTRIB_NORMAL);
-		glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	}
-
 	if (!texCoords.empty()) {
 		GLuint bTexCoord;
 		glGenBuffers(1, &bTexCoord);

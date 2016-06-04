@@ -3,286 +3,151 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <chrono>
+#include <random>
+#include <functional>
 #include <cstdlib>
 
 #include "helper.h"
-#include "world.h"
 #include "global.h"
-#include "camera.h"
-#include "bullet.h"
-#include "tour.h"
-#include "animation.h"
 
-#include "sphere.h"
 #include "square.h"
-#include "cube.h"
-#include "skybox.h"
-#include "wavefront.h"
 
-#ifdef BULLET
-#include <btBulletDynamicsCommon.h>
-#endif
+#define BIRD_UPWARD	(9.81f * 0.1f)
+#define BIRD_ACCEL	(-9.81f * 20.f)
+#define PIPE_SPACING	0.75f
 
 using namespace std;
 using namespace glm;
 
+unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+std::default_random_engine generator(seed);
+std::uniform_real_distribution<double> distribution;
+
 GLFWwindow *window;
+
+Square *square;
 
 program_t programs[PROGRAM_COUNT];
 texture_t textures[TEXTURE_COUNT];
 
-shadow_t shadow;
-Square *square;
-Sphere *sphere;
+struct {
+	double time, start;
+} status;
+
+struct {
+	double pos;
+	double speed;
+} bird;
+
+struct pipe_t {
+	GLfloat pos;
+};
+
+vector<pipe_t> pipes;
 
 void quit();
-
-static void setupShadowStorage()
-{
-	glGenTextures(1, &shadow.environment.texture);
-	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
-		     SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-
-	glGenFramebuffers(1, &shadow.fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
-	glDrawBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
 
 void setupObjects()
 {
 	square = new Square;
-	sphere = new Sphere(8);
-	loadObjects();
 }
 
-static void renderObjects()
+static void renderBackground()
 {
-	glUseProgram(programs[PROGRAM_WAVEFRONT].id);
-	//checkError("switching to PROGRAM_WAVEFRONT");
-	uniformMap &uniforms = programs[PROGRAM_WAVEFRONT].uniforms;
-
-	glUniform1i(uniforms[UNIFORM_SAMPLER], 0);
-	glUniform1i(uniforms[UNIFORM_SAMPLER_SHADOW], 1);
-	glUniformMatrix4fv(uniforms[UNIFORM_MAT_SHADOW], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
-
-	glActiveTexture(GL_TEXTURE0 + 1);
-	glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
-	glActiveTexture(GL_TEXTURE0);
-
-	glUniform3fv(uniforms[UNIFORM_VIEWER], 1, (GLfloat *)&camera.position());
-	setLights(uniforms);
-
-	for (const pair<string, object_t> &objpair: objects) {
-		const object_t &obj = objpair.second;
-		matrix.model = translate(mat4(), obj.pos);
-		if (obj.rigidBody)
-			matrix.model = bulletGetMatrix(obj.rigidBody) * matrix.model;
-		matrix.model = scale(matrix.model, obj.model->scale);
-		matrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-		glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-		if (obj.model->culling)
-			glEnable(GL_CULL_FACE);
-		else
-			glDisable(GL_CULL_FACE);
-		obj.model->model->bind();
-		obj.model->model->render();
-	}
-
-	glEnable(GL_CULL_FACE);
-	for (pair<string, light_t> lightpair: lights) {
-		light_t &light = lightpair.second;
-		if (environment.status() == environment_t::Night)
-			continue;
-		if (lightpair.first == LIGHT_ENV)
-			continue;
-
-		matrix.model = translate(mat4(), light.position);
-		if (lightpair.first == LIGHT_CAMERA)
-			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
-		else
-			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE) * 100.f);
-		matrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MODEL], 1, GL_FALSE, (GLfloat *)&matrix.model);
-		glUniformMatrix3fv(uniforms[UNIFORM_MAT_NORMAL], 1, GL_FALSE, (GLfloat *)&matrix.normal);
-
-		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
-		sphere->bind();
-		sphere->render();
-	}
-
-	for (pair<string, light_t> lightpair: lights) {
-		light_t &light = lightpair.second;
-		if (!light.daytime && environment.status() != environment_t::Night)
-			continue;
-		if (lightpair.first == LIGHT_ENV)
-			continue;
-
-		glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
-		uniformMap &uniform = programs[PROGRAM_TEXTURE_BASIC].uniforms;
-
-		matrix.model = translate(mat4(), light.position);
-		if (lightpair.first == LIGHT_CAMERA)
-			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE));
-		else
-			matrix.model = scale(matrix.model, vec3(LIGHT_SIZE) * 100.f);
-		matrix.update();
-		glUniformMatrix4fv(uniform[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&matrix.mvp);
-		glUniform3f(uniform[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
-
-		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SPHERE].id);
-		sphere->bind();
-		sphere->render();
-	}
+	glUseProgram(programs[PROGRAM_BACKGROUND].id);
+	uniformMap &uniforms = programs[PROGRAM_BACKGROUND].uniforms;
+	mat4 matrix = mat4();
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MV], 1, GL_FALSE, (GLfloat *)&matrix);
+	glUniform1f(uniforms[UNIFORM_TIME], status.time);
+	square->bind();
+	square->render();
 }
 
-static void renderEnvironmentShadow()
+static void renderBird()
 {
-	int width, height;
-	glfwGetWindowSize(window, &width, &height);
-	//shadowMatrix.projection = infinitePerspective(90.f, (GLfloat)width / (GLfloat)height, 1.f);
-	//shadowMatrix.projection = ortho(-1.f, 1.f, -1.f, 1.f);
-	shadowMatrix.projection = perspective<GLfloat>(90.f, (GLfloat)width / (GLfloat)height, 1.f, 30.f);
-	shadowMatrix.view = lookAt(environment.light.position, vec3(0.f), vec3(0.f, 1.f, 0.f));
-	//shadowMatrix.view = lookAt(environment.light.position + camera.position(),
-	//			   camera.position(), vec3(0.f, 1.f, 0.f));
+	glUseProgram(programs[PROGRAM_TEXTURED_BASIC].id);
+	uniformMap &uniforms = programs[PROGRAM_TEXTURED_BASIC].uniforms;
+	mat4 matrix = translate(mat4(), vec3(-0.8f, bird.pos, 0.f));
+	matrix = scale(matrix, vec3(0.1f, 0.1f, 1.f));
+	glUniformMatrix4fv(uniforms[UNIFORM_MAT_MV], 1, GL_FALSE, (GLfloat *)&matrix);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_BIRD].id);
+	square->bind();
+	square->render();
+}
 
-	glUseProgram(programs[PROGRAM_SHADOW].id);
-	uniformMap &uniforms = programs[PROGRAM_SHADOW].uniforms;
-	environment.renderGround();
-	camera.render();
+static void renderPipes()
+{
+	glUseProgram(programs[PROGRAM_TEXTURED_BASIC].id);
+	uniformMap &uniforms = programs[PROGRAM_TEXTURED_BASIC].uniforms;
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_PIPE].id);
 
-	for (const pair<string, object_t> &objpair: objects) {
-		const object_t &obj = objpair.second;
-		shadowMatrix.model = translate(mat4(), obj.pos);
-		if (obj.rigidBody)
-			shadowMatrix.model = bulletGetMatrix(obj.rigidBody) * shadowMatrix.model;
-		shadowMatrix.model = scale(shadowMatrix.model, obj.model->scale);
-		shadowMatrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
+	mat4 size = scale(mat4(), vec3(1.f / 8.f, 1.f, 1.f));
+	unsigned int i = 0;
+	for (pipe_t pipe: pipes) {
+		square->bind();
 
-		if (obj.model->culling)
-			glEnable(GL_CULL_FACE);
-		else
-			glDisable(GL_CULL_FACE);
-		obj.model->model->bind();
-		obj.model->model->render();
+		double x = (double)(i++ * 2) - (status.time - status.start) + 4.f;
+		x /= 2.f;
+		double y = 1.f + PIPE_SPACING / 2.f;
+		mat4 pos = translate(mat4(), vec3(0.f, -pipe.pos, 0.f));
+		mat4 trans = translate(mat4(), vec3(x, y, 0.f));
+		mat4 matrix = pos * trans * size;
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MV], 1, GL_FALSE, (GLfloat *)&matrix);
+		square->render();
+
+		y = -y;
+		pos = translate(mat4(), vec3(0.f, -pipe.pos, 0.f));
+		trans = translate(mat4(), vec3(x, y, 0.f));
+		matrix = pos * trans * size;
+		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MV], 1, GL_FALSE, (GLfloat *)&matrix);
+		square->render();
 	}
-
-	glEnable(GL_CULL_FACE);
-	for (pair<string, light_t> lightpair: lights) {
-		light_t &light = lightpair.second;
-		if (environment.status() == environment_t::Night)
-			continue;
-		if (lightpair.first == LIGHT_ENV)
-			continue;
-
-		shadowMatrix.model = translate(mat4(), light.position);
-		if (lightpair.first == LIGHT_CAMERA)
-			shadowMatrix.model = scale(shadowMatrix.model, vec3(LIGHT_SIZE));
-		else
-			shadowMatrix.model = scale(shadowMatrix.model, vec3(LIGHT_SIZE) * 100.f);
-		shadowMatrix.update();
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&shadowMatrix.mvp);
-
-		sphere->bind();
-		sphere->render();
-	}
-
-	static const mat4 scaleBiasMatrix = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
-						 vec4(0.0f, 0.5f, 0.0f, 0.0f),
-						 vec4(0.0f, 0.0f, 0.5f, 0.0f),
-						 vec4(0.5f, 0.5f, 0.5f, 1.0f));
-	shadowMatrix.mvp = scaleBiasMatrix * shadowMatrix.projection * shadowMatrix.view;
 }
 
 static void render()
 {
-	// Render shadow map to texture
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow.environment.texture, 0);
-	glViewport(0, 0, SHADOW_TEXTURE_SIZE, SHADOW_TEXTURE_SIZE);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	// Resolve depth-fighting issues
-	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(10.f, 4.f);
-	status.shadow = true;
-	renderEnvironmentShadow();
-	glDisable(GL_POLYGON_OFFSET_FILL);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	int width, height;
-	glfwGetWindowSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-	status.shadow = false;
-
-#ifndef SUBMISSION
-	// Render shadow texture to screen
-	if (status.mode == status_t::EnvShadowMode) {
-		glClearColor(0.f, 0.f, 0.f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glUseProgram(programs[PROGRAM_TEXTURE_BASIC].id);
-		uniformMap &uniforms = programs[PROGRAM_TEXTURE_BASIC].uniforms;
-		mat4 mat = rotate(mat4(), PI / 2, vec3(1.f, 0.f, 0.f));
-		glUniformMatrix4fv(uniforms[UNIFORM_MAT_MVP], 1, GL_FALSE, (GLfloat *)&mat);
-		glUniform3f(uniforms[UNIFORM_AMBIENT], 1.f, 1.f, 1.f);
-
-		glBindTexture(GL_TEXTURE_2D, shadow.environment.texture);
-		square->bind();
-		square->render();
-		return;
-	}
-#endif
-
-	// Render scene
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	environment.renderSkybox();
-	camera.render();
-	environment.renderGround();
-	renderObjects();
+	renderBackground();
+	renderBird();
+	renderPipes();
 }
 
-void step(bool first = false)
+static void update()
 {
 	double time = glfwGetTime();
-	double diff = time - status.animation;
-	status.animation = time;
+	double prev = status.time - status.start;
+	double diff = time - status.time;
+	status.time = time;
+	double current = status.time - status.start;
 
-	if (status.mode == status_t::TourMode)
-		updateTour();
+	bird.pos += diff * bird.speed;
+	bird.speed += 0.5f * BIRD_ACCEL * diff * diff;
 
-	camera.updateCB(diff);
-
-	if (first || (status.run && diff > 0.f)) {
-		//clog << __func__ << ": " << diff << endl;
-		time -= status.pauseDuration;
-		environment.update(time);
-		animation(time);
-		// Step 1 bullet simulation frame at first time
-		bulletUpdate(first ? 0.f : diff);
+	double iPrev, iCurrent;
+	modf(prev, iPrev);
+	modf(current, iCurrent);
+	if (iCurrent != iPrev && ((int)iCurrent % 2)) {
+		pipe_t pipe;
+		pipe.pos = (distribution(generator) - 0.5f) * (2.f - PIPE_SPACING);
+		pipes.push_back(pipe);
 	}
 }
 
-void report()
+static void check()
 {
-	clog << "****** Report at " << glfwGetTime() << " seconds ******" << endl;
-	environment.print();
-	camera.print();
-	printObjects();
+	unsigned int i = 0;
+	for (pipe_t pipe: pipes) {
+	}
+}
+
+static void reset()
+{
+	status.start = glfwGetTime();
+	bird.pos = 0;
+	bird.speed = BIRD_UPWARD;
+	pipes.clear();
 }
 
 static void refreshCB(GLFWwindow *window)
@@ -290,9 +155,8 @@ static void refreshCB(GLFWwindow *window)
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	glViewport(0, 0, width, height);
-	//GLfloat asp = (GLfloat)height / (GLfloat)width;
-	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -asp, asp, -10, 10);
-	matrix.projection = perspective<GLfloat>(45.f, (GLfloat)width / (GLfloat)height, 0.01f, 100.f);
+	//GLfloat invasp = (GLfloat)height / (GLfloat)width;
+	//matrix.projection = ortho<GLfloat>(-1.f, 1.f, -invasp, invasp, -1, 1);
 }
 
 static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action, int /*mods*/)
@@ -306,99 +170,23 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		// Exit the program
 		quit();
 		return;
-	case GLFW_KEY_H:
-		// Help screen, optional
-		return;
-#ifndef SUBMISSION
-	case GLFW_KEY_X:
-		report();
-		return;
-#endif
-	}
-
-	if (status.mode == status_t::TourMode) {
-		if (key == GLFW_KEY_E)	// Exit the tour mode (optional)
-			quitTour();
-		return;
-	}
-
-	switch (key) {
-	case GLFW_KEY_T:
-		// Start the tour (keys except E, Q, ESC are ignored)
-		initTour();
-		return;
-	case GLFW_KEY_SPACE:
-		// Stop all motion (optional)
-		status.pause(status.run);
-		camera.setSpeed(0.f);
-		return;
 	case GLFW_KEY_R:
-		// Reset all animation (optional)
-		status.pauseDuration = glfwGetTime();
-		status.run = true;
-		camera.reset();
-		return;
-
-	case GLFW_KEY_P:
-		// Move to predefined location (screen shot)
-		camera.backup();
-		loadRecord(records["P"]);
-		return;
-	case GLFW_KEY_L:
-		// Alternative view point 1 (optional)
-		camera.backup();
-		loadRecord(records["L"]);
-		return;
-	case GLFW_KEY_O:
-		// Alternative view point 2 (overhead, optional)
-		camera.backup();
-		loadRecord(records["O"]);
-		return;
-	case GLFW_KEY_M:
-		// Return to last position of mobile camera
-		camera.restore();
-		return;
-
-#ifndef SUBMISSION
-	case GLFW_KEY_0:
-		if (status.mode == status_t::EnvShadowMode)
-			status.mode = status_t::CameraMode;
-		else
-			status.mode = status_t::EnvShadowMode;
-		return;
-#endif
+		reset();
+		break;
+	case GLFW_KEY_SPACE:
+		bird.speed = BIRD_UPWARD;
+		break;
 	}
-
-	camera.keyCB(key);
 }
 
 void mouseCB(GLFWwindow */*window*/, int button, int action, int /*mods*/)
 {
-	if (status.mode == status_t::TourMode)
-		return;
-	camera.mouseCB(button, action);
-}
-
-void scrollCB(GLFWwindow */*window*/, double /*xoffset*/, double yoffset)
-{
-	if (status.mode == status_t::TourMode)
-		return;
-	camera.scrollCB(yoffset);
-}
-
-void cursorCB(GLFWwindow */*window*/, double xpos, double ypos)
-{
-	if (status.mode == status_t::TourMode)
-		return;
-	camera.cursorCB(xpos, ypos);
 }
 
 void quit()
 {
+	delete square;
 	glfwTerminate();
-
-	cleanupModels();
-	bulletCleanup();
 	exit(0);
 }
 
@@ -435,71 +223,32 @@ int main(int /*argc*/, char */*argv*/[])
 		return -1;
 	}
 
-#if 0	// GLFW supports cube_map, but GLEW does not?
-	clog << (glIsEnabled(GL_TEXTURE_CUBE_MAP_ARB) ? "Yes" : "No") << endl;
-	clog << (GLEW_ARB_texture_cube_map ? "Yes" : "No") << endl;
-	clog << (glfwExtensionSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
-	clog << (glewIsSupported("GL_ARB_texture_cube_map") == GL_TRUE ? "Yes" : "No") << endl;
-
-#if 0
-	GLint n, i;
-	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
-	clog << "Extensions: " << n << endl;
-	for (i = 0; i < n; i++)
-		clog << glGetStringi(GL_EXTENSIONS, i) << endl;
-#endif
-#endif
-
 	glGetError();	// There is an initialisation error
-	//checkError("initialisation");
-	glEnable(GL_DEPTH_TEST);
-	checkError("enabling depth test");
-#ifdef CULL_FACE
-	glEnable(GL_CULL_FACE);
-	checkError("enabling back face culling");
-#endif
-#ifdef ALPHA_BLEND
+	//glEnable(GL_DEPTH_TEST);
+	//checkError("enabling depth test");
 	glEnable(GL_BLEND);
-	checkError("enabling alpha blending");
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#endif
-	glEnable(GL_TEXTURE_2D);
-	glGetError();	// Ignore the error
-	//checkError("enabling texture 2D");
-	//glEnable(GL_TEXTURE_CUBE_MAP);
-	//checkError("enabling cube map");
 
 	if (setupPrograms() || setupTextures()) {
 		glfwTerminate();
 		return -1;
 	}
 
-#ifdef BULLET
-	bulletInit();
-#endif
-
-	loadTour();
-	loadRecords();
-	loadModels();
-	camera.setup();
-	environment.setup();
 	setupObjects();
-	setupShadowStorage();
 
 	glfwSetWindowRefreshCallback(window, refreshCB);
 	glfwSetKeyCallback(window, keyCB);
 	glfwSetMouseButtonCallback(window, mouseCB);
-	glfwSetScrollCallback(window, scrollCB);
-	glfwSetCursorPosCallback(window, cursorCB);
 	refreshCB(window);
 
-	float past = status.animation = glfwGetTime();
+	srand(time(0));
+	reset();
+	float past = status.start = glfwGetTime();
 	unsigned int count = 0;
-	step(true);
-	initTour();
 	while (!glfwWindowShouldClose(window)) {
+		check();
 		render();
-		step();
+		update();
 
 		// FPS counter
 		count++;
@@ -510,16 +259,7 @@ int main(int /*argc*/, char */*argv*/[])
 			past = now;
 
 			ostringstream ss;
-			ss << fps << " FPS [";
-			if (status.mode == status_t::CameraMode)
-				ss << "Camera";
-			else if (status.mode == status_t::TourMode)
-				ss << "Tour";
-			else if (status.mode == status_t::EnvShadowMode)
-				ss << "Shadow: Environment";
-			ss << "]";
-			if (!status.run)
-				ss << " *Paused*";
+			ss << fps << " FPS";
 			glfwSetWindowTitle(window, ss.str().c_str());
 		}
 

@@ -25,7 +25,7 @@ protected:
 	virtual void setupVAO();
 
 	GLuint vao;
-	std::vector<glm::vec3> vertices, normals;
+	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> texCoords;
 	std::vector<GLuint> indices;
 };

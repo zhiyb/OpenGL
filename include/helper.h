@@ -11,37 +11,6 @@ struct shader_t {
 	const char *path;
 };
 
-struct model_t {
-	model_t() : model(0) {}
-	class Wavefront *model;
-	std::string id;
-	glm::vec3 scale;
-	float mass;
-	bool culling;
-	bool bullet, upright;
-};
-extern std::unordered_map<std::string, model_t> models;
-
-struct object_t {
-	std::string id;
-	glm::vec3 pos;
-	glm::quat rot;
-	bool animation;
-	model_t *model;
-	btRigidBody *rigidBody;
-};
-extern std::unordered_map<std::string, object_t> objects;
-
-struct light_t {
-	bool daytime;
-	glm::vec3 ambient;
-	glm::vec3 colour;
-	glm::vec3 position;
-	GLint shadow;
-	float attenuation;
-};
-extern std::unordered_map<std::string, light_t> lights;
-
 std::string basename(std::string &path);
 static inline std::istream &operator>>(std::istream &stream, glm::vec3 &vec)
 {return stream >> vec.x >> vec.y >> vec.z;}
@@ -69,12 +38,6 @@ GLuint setupPrograms();
 GLuint setupTextures();
 
 texture_t loadTexture(const char *path);
-void setLights(uniformMap &uniforms);
-
-void loadModels();
-void cleanupModels();
-void loadObjects();
-void printObjects();
 
 // Cartesian coordinates to Spherical coordinates conversion
 static inline glm::vec3 spherical(glm::vec3 v)
