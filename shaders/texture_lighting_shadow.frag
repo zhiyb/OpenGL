@@ -1,4 +1,4 @@
-#version 330
+#version 130
 
 uniform sampler2D sampler;
 uniform sampler2DShadow shadowSampler;
@@ -23,25 +23,23 @@ struct light_t {
 uniform light_t lights[maxLights];
 
 // Interfaces
-in VS_FS_INTERFACE {
-	vec4 shadow;
-	vec3 world;
-	vec3 normal;
-	vec3 eye;
-	vec2 tex;
-} fragment;
+in vec4 vf_shadow;
+in vec3 vf_world;
+in vec3 vf_normal;
+in vec3 vf_eye;
+in vec2 vf_tex;
 out vec4 FragColor;
 
 void main(void)
 {
-	vec4 tex = vec4(material.diffuse, 1.0) * texture(sampler, fragment.tex);
-	float shadow = textureProj(shadowSampler, fragment.shadow);
-	vec3 shadowPos = fragment.shadow.xyz * fragment.shadow.w / 2048.f;
+	vec4 tex = vec4(material.diffuse, 1.0) * texture(sampler, vf_tex);
+	float shadow = textureProj(shadowSampler, vf_shadow);
+	vec3 shadowPos = vf_shadow.xyz * vf_shadow.w / 2048.f;
 	if (shadowPos.x < 0.0 || shadowPos.y < 0.0 || shadowPos.x > 1.0 || shadowPos.y > 1.0)
 		shadow = 1.f;
-	vec3 world = fragment.world;
-	vec3 normal = normalize(fragment.normal);
-	vec3 eyeDirection = normalize(fragment.eye);
+	vec3 world = vf_world;
+	vec3 normal = normalize(vf_normal);
+	vec3 eyeDirection = normalize(vf_eye);
 	if (tex.a < 0.5)
 		discard;
 	else

@@ -1,4 +1,4 @@
-#version 330
+#version 130
 
 in vec3 position, normal;
 in vec2 tex;
@@ -8,18 +8,16 @@ uniform mat4 mvpMatrix;
 uniform mat4 modelMatrix;
 uniform mat3 normalMatrix;
 
-out VS_FS_INTERFACE {
-	vec3 world;
-	vec3 normal;
-	vec3 eye;
-	vec2 tex;
-} vertex;
+out vec3 vf_world;
+out vec3 vf_normal;
+out vec3 vf_eye;
+out vec2 vf_tex;
 
 void main(void)
 {
 	gl_Position = mvpMatrix * vec4(position, 1.0);
-	vertex.normal = normalMatrix * normal;
-	vertex.world = vec3(modelMatrix * vec4(position, 1.0));
-	vertex.eye = viewer - vertex.world;
-	vertex.tex = tex;
+	vf_normal = normalMatrix * normal;
+	vf_world = vec3(modelMatrix * vec4(position, 1.0));
+	vf_eye = viewer - vf_world;
+	vf_tex = tex;
 }

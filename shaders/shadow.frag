@@ -1,6 +1,6 @@
-#version 330
+#version 130
 
-layout (location = 0) out vec4 FragColor;
+out vec4 FragColor;
 
 void main(void)
 {

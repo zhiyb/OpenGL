@@ -1,4 +1,4 @@
-#version 330
+#version 130
 
 uniform sampler2D sampler;
 
@@ -9,12 +9,10 @@ uniform material_t material;
 
 out vec4 FragColor;
 
-in VS_FS_INTERFACE {
-	vec2 tex;
-} fragment;
+in vec2 vf_tex;
 
 void main(void)
 {
-	vec4 tex = texture(sampler, fragment.tex);
+	vec4 tex = texture(sampler, vf_tex);
 	FragColor = vec4(material.ambient * tex.rgb, tex.a);
 }

@@ -1,4 +1,4 @@
-#version 330
+#version 130
 
 uniform sampler2D sampler;
 
@@ -20,20 +20,18 @@ struct light_t {
 };
 uniform light_t lights[maxLights];
 
-in VS_FS_INTERFACE {
-	vec3 world;
-	vec3 normal;
-	vec3 eye;
-	vec2 tex;
-} fragment;
+in vec3 vf_world;
+in vec3 vf_normal;
+in vec3 vf_eye;
+in vec2 vf_tex;
 out vec4 FragColor;
 
 void main(void)
 {
-	vec4 tex = vec4(material.diffuse, 1.0) * texture(sampler, fragment.tex);
-	vec3 world = fragment.world;
-	vec3 normal = normalize(fragment.normal);
-	vec3 viewer = normalize(fragment.eye);
+	vec4 tex = vec4(material.diffuse, 1.0) * texture(sampler, vf_tex);
+	vec3 world = vf_world;
+	vec3 normal = normalize(vf_normal);
+	vec3 viewer = normalize(vf_eye);
 	if (tex.a < 0.5)
 		discard;
 	else
