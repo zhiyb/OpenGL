@@ -32,7 +32,7 @@
 #define LIGHT_ENV	"ENV"
 #define LIGHT_CAMERA	"CAM"
 
-#define SUBMISSION
+//#define SUBMISSION
 #define BULLET
 //#define MODELS
 #define TEXTURE_ALPHA

@@ -393,6 +393,12 @@ void cursorCB(GLFWwindow */*window*/, double xpos, double ypos)
 	camera.cursorCB(xpos, ypos);
 }
 
+void errorCB(int error, const char *desc)
+{
+	cerr << "glfw error: " << error << endl;
+	cerr << desc << endl;
+}
+
 void quit()
 {
 	glfwTerminate();
@@ -413,6 +419,7 @@ int main(int /*argc*/, char */*argv*/[])
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwSetErrorCallback(errorCB);
 	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window) {
 		cerr << "Cannot create glfw Window" << endl;
