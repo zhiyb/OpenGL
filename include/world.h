@@ -8,10 +8,10 @@
 class status_t
 {
 public:
-	status_t() : run(true), shadow(false), animation(0.f), mode(CameraMode) {}
+	status_t() : run(true), shadow(false), lines(false), animation(0.f), mode(CameraMode) {}
 	void pause(bool e);
 
-	bool run, shadow;
+	bool run, shadow, lines;
 	double animation, pauseStart, pauseDuration;
 	enum {CameraMode, EnvShadowMode, TourMode} mode;
 };

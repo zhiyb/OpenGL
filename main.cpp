@@ -211,6 +211,10 @@ static void renderEnvironmentShadow()
 
 static void render()
 {
+	if (status.lines)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	// Render shadow map to texture
 	glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow.environment.texture, 0);
@@ -313,6 +317,15 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 	case GLFW_KEY_X:
 		report();
 		return;
+	case GLFW_KEY_0:
+		if (status.mode == status_t::EnvShadowMode)
+			status.mode = status_t::CameraMode;
+		else
+			status.mode = status_t::EnvShadowMode;
+		return;
+	case GLFW_KEY_1:
+		status.lines = !status.lines;
+		return;
 #endif
 	}
 
@@ -358,15 +371,6 @@ static void keyCB(GLFWwindow */*window*/, int key, int /*scancode*/, int action,
 		// Return to last position of mobile camera
 		camera.restore();
 		return;
-
-#ifndef SUBMISSION
-	case GLFW_KEY_0:
-		if (status.mode == status_t::EnvShadowMode)
-			status.mode = status_t::CameraMode;
-		else
-			status.mode = status_t::EnvShadowMode;
-		return;
-#endif
 	}
 
 	camera.keyCB(key);
